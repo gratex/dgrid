@@ -18,5 +18,6 @@ define({
 	sk: true,
 	th: true,
 	"zh-cn": true,
-	"zh-hk": true
+	"zh-hk": true,
+	"az-az": true
 });
