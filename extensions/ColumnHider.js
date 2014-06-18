@@ -58,12 +58,17 @@ function(declare, has, listen, miscUtil, put, i18n){
 		//		Hash containing checkboxes generated for menu items.
 		_columnHiderCheckboxes: null,
 		
+		// dataColumnSetIndex: Number
+		//		Index of columnset to use when generating checkboxes
+		dataColumnSetIndex: 0,//[GTI]:AR,PM: added new prop
+		
 		_renderHiderMenuEntries: function(){
 			// summary:
 			//		Iterates over subRows for the sake of adding items to the
 			//		column hider menu.
 			
-			var subRows = this.subRows,
+			//[GTI]PK: to support column hider also with columnSets (select a columnset to apply column hider on)
+			var subRows = this.columnSets ? this.columnSets[this.dataColumnSetIndex || 0] : this.subRows,
 				first = true,
 				srLength, cLength, sr, c;
 			
