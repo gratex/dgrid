@@ -89,7 +89,7 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 				node,
 				i;
 			
-			statusNode.tabIndex = 0;
+			statusNode.tabIndex = -1; //[GTI]LZ: removed tabbing through plain text
 			
 			// Initialize UI based on pageSizeOptions and rowsPerPage
 			this._updatePaginationSizeSelect();
@@ -445,9 +445,12 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 					// Reset scroll Y-position now that new page is loaded.
 					grid.scrollTo({ y: 0 });
 					
-					Deferred.when(results.total, function(total){
+					Deferred.when(results.total, function(_total){
+						//[GTI]pkrajnik - fix total (*), if service send undefined count
+						var total = isNaN(_total) ? start + rows.length : _total;
+						var isTotal = !isNaN(_total) || total < start + count;
 						if(!total){
-							if(grid.noDataNode){
+							if (grid.noDataNode) {
 								put(grid.noDataNode, "!");
 								delete grid.noDataNode;
 							}
@@ -460,7 +463,7 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 						grid.paginationStatusNode.innerHTML = string.substitute(grid.i18nPagination.status, {
 							start: Math.min(start + 1, total),
 							end: Math.min(total, start + count),
-							total: total
+							total: isTotal ? total : "*"//[GTI]pkrajnik - show "*" instead of NaN
 						});
 						grid._total = total;
 						grid._currentPage = page;
@@ -482,7 +485,22 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 					dfd.reject(error);
 				});
 				
-				return dfd.promise;
+				//[GTI] MR: added emiting event, when page has been loaded
+				var self = this;
+				return dfd.promise.then(function(results) {
+					setTimeout(function() {
+						on.emit(self.domNode, "dgrid-page-complete", {
+							bubbles : true,
+							cancelable : false,
+							grid : self,
+							page : page,
+							results : results
+						// QueryResults object (may be a wrapped promise)
+						});
+					}, 0);
+
+					return results;
+				});
 			});
 			
 			if (!result) {
