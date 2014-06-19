@@ -315,7 +315,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this.refresh();
 		},
 		
-		_trackError: function(func){
+		_trackError: function(func, args){
 			// summary:
 			//		Utility function to handle emitting of error events.
 			// func: Function|String
@@ -324,15 +324,17 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			//		If sync, it can return a value, but may throw an error on failure.
 			//		If async, it should return a promise, which would fire the error
 			//		callback on failure.
+			// args: Array? [GTI]
+			//		Optional additional arguments, which callcback function "func" can be called
 			// tags:
 			//		protected
 			
 			var result;
 			
-			if(typeof func == "string"){ func = lang.hitch(this, func); }
+			if(typeof func == "string"){ func = this[func]; } //[GTI] use this[func], instead of lang.hitch(this, func)
 			
 			try{
-				result = func();
+				result = func.apply(this, args || []); // [GTI] allow to call func with additional arguments
 			}catch(err){
 				// report sync error
 				_StoreMixin.emitError.call(this, err);//[GTI] replaced to use exposed method
