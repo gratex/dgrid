@@ -486,13 +486,12 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 				});
 				
 				//[GTI] MR: added emiting event, when page has been loaded
-				var self = this;
 				return dfd.promise.then(function(results) {
 					setTimeout(function() {
-						on.emit(self.domNode, "dgrid-page-complete", {
+						on.emit(grid.domNode, "dgrid-page-complete", {
 							bubbles : true,
 							cancelable : false,
-							grid : self,
+							grid : grid,
 							page : page,
 							results : results
 						// QueryResults object (may be a wrapped promise)
