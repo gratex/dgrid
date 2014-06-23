@@ -447,7 +447,7 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 					
 					Deferred.when(results.total, function(_total){
 						//[GTI]pkrajnik - fix total (*), if service send undefined count
-						var total = isNaN(_total) ? start + rows.length : _total;
+						var total = isNaN(_total) ? start + rows.length + 1 : _total;
 						var isTotal = !isNaN(_total) || total < start + count;
 						if(!total){
 							if (grid.noDataNode) {
