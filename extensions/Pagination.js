@@ -465,7 +465,7 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 							end: Math.min(total, start + count),
 							total: isTotal ? total : "*"//[GTI]pkrajnik - show "*" instead of NaN
 						});
-						grid._total = total;
+						grid._total = isTotal ? total : start + count * 2; //[GTI]pkrajnik - fix total
 						grid._currentPage = page;
 						grid._rowsOnPage = rows.length;
 						
