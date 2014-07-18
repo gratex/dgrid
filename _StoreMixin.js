@@ -160,8 +160,8 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			// summary:
 			//		Get a fresh queryOptions object, also including the current sort
 			var options = lang.delegate(this.queryOptions, {});
-			//[GTI] PM: allow to set empty sort grid.set("sort", []);
-			if(typeof(this._sort) === "function" || (this._sort && this._sort.length >= 0)){
+
+			if(typeof(this._sort) === "function" || this._sort.length){
 				// Prevents SimpleQueryEngine from doing unnecessary "null" sorts (which can
 				// change the ordering in browsers that don't use a stable sort algorithm, eg Chrome)
 				options.sort = this._sort;
