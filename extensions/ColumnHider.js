@@ -19,7 +19,7 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
  */
 	
 	var activeGrid, // references grid for which the menu is currently open
-		bodyListener, // references pausable event handler for body mousedown
+		//bodyListener, // references pausable event handler for body mousedown  //MR commented out, not used, see usage this._bodyListener
 		// Need to handle old IE specially for checkbox listener and for attribute.
 		hasIE = has("ie"),
 		hasIEQuirks = hasIE && has("quirks"),
@@ -31,7 +31,7 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 		// (e.g. gridIDhere-hider-menu-check-colIDhere -> colIDhere)
 
 		//return cb.id.substr(grid.id.length + 18);
-		//MR: added to support nested properties
+		//[GTI]MR: added to support nested properties
 		return domAttr.get(cb.id, "data-field");
 	}
 	
@@ -114,7 +114,7 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 			// put-selector can't handle invalid selector characters, and the
 			// ID could have some, so add it directly
 			checkbox = this._columnHiderCheckboxes[id] =
-				put(div, "input.dgrid-hider-menu-check.hider-menu-check-" + replacedId + "[type=checkbox][data-field=" + id + "]"); //MR added data-field attribute for nested properties support
+				put(div, "input.dgrid-hider-menu-check.hider-menu-check-" + replacedId + "[type=checkbox][data-field=" + id + "]"); //[GTI]MR: added data-field attribute for nested properties support
 			checkbox.id = checkId;
 			
 			label = put(div, "label.dgrid-hider-menu-label.hider-menu-label-" + replacedId +
@@ -134,7 +134,8 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 			var grid = this,
 				hiderMenuNode = this.hiderMenuNode,
 				hiderToggleNode = this.hiderToggleNode,
-				id;
+				id,
+				bodyListener = this._bodyListener; //[GTI]MR: added to support user preferrences, references pausable event handler for body mousedown
 			
 			function stopPropagation(event){
 				event.stopPropagation();
@@ -189,11 +190,20 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 				
 				// Hook up top-level mousedown listener if it hasn't been yet.
 				if(!bodyListener){
-					bodyListener = listen.pausable(document, "mousedown", function(e){
+					//[GTI]MR: added this._bodyListener to support user preferrences
+					this._listeners.push(bodyListener = this._bodyListener = listen.pausable(document, "mousedown", function(e){
 						// If an event reaches this listener, the menu is open,
 						// but a click occurred outside, so close the dropdown.
-						activeGrid && activeGrid._toggleColumnHiderMenu(e);
-					});
+
+						//[GTI]MR: we can relly on _hiderMenuOpened because this variable decides about previously used activeGrid
+						//we can not relly on activeGrid anymore, because it is local variable and we might need to handle this in UserPreferrences extension too.
+						if (grid._hiderMenuOpened) {
+							grid._toggleColumnHiderMenu(e);
+						}
+
+						//activeGrid && activeGrid._toggleColumnHiderMenu(e);
+					}));
+
 					bodyListener.pause(); // pause initially; will resume when menu opens
 				}
 			}else{ // subsequent run
@@ -252,6 +262,7 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 			var hidden = this._hiderMenuOpened, // reflects hidden state after toggle
 				hiderMenuNode = this.hiderMenuNode,
 				domNode = this.domNode,
+				bodyListener = this._bodyListener, //[GTI]MR: added to support user preferrences, references pausable event handler for body mousedown
 				firstCheckbox;
 
 			// Show or hide the hider menu
@@ -278,8 +289,9 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 			// Pause or resume the listener for clicks outside the menu
 			bodyListener[hidden ? "pause" : "resume"]();
 
+			//[GTI]MR: activeGrid not needed anymore, causes problems with User preferrences extension
 			// Update activeGrid appropriately
-			activeGrid = hidden ? null : this;
+			//activeGrid = hidden ? null : this;
 
 			// Toggle the instance property
 			this._hiderMenuOpened = !hidden;
