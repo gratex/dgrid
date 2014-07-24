@@ -155,7 +155,8 @@ function(kernel, arrayUtil, on, aspect, has, put){
 			disabled = column.disabled;
 
 			// must set the class name on the outer cell in IE for keystrokes to be intercepted
-			put(parent && parent.contents ? parent : cell, ".dgrid-selector");
+			//[GTI][MR]: add special class (dgrid-cell-selector) for easy styling.
+			put(parent && parent.contents ? parent : cell, ".dgrid-cell-selector.dgrid-selector");
 			var input = cell.input || (cell.input = put(cell, "input[type="+type + "]", {
 				tabIndex: isNaN(column.tabIndex) ? -1 : column.tabIndex,
 				disabled: disabled && (typeof disabled == "function" ?
@@ -187,6 +188,14 @@ function(kernel, arrayUtil, on, aspect, has, put){
 			
 			if(type == "radio" || !grid.allowSelectAll){
 				th.appendChild(document.createTextNode(label));
+
+				//[GTI][MR]: add special class (dgrid-cell-selector) for easy styling.
+				//we can not use .dgrid-selector because it is used as click selector
+				//which might cause problem in single selection mode and clicking on header
+				if(!label){
+					put(th, ".dgrid-cell-selector");
+				}
+
 				if(!grid._hasSelectorInputListener){
 					setupSelectionEvents();
 				}
