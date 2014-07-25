@@ -213,7 +213,8 @@ html.has-mozilla .dgrid-focus {
 	position: relative;
 	overflow-y: hidden;
 }
-.dgrid-autoheight .dgrid-header-scroll {
+.dgrid-autoheight .dgrid-header-scroll, .dgrid-autoheight .dgrid-scrollbar-width {
+	/* [GTI]JU: hide also .dgrid-scrollbar-width to prevent footer (editor) shifting */
 	display: none;
 }
 .dgrid-autoheight .dgrid-header {
