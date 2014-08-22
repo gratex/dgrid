@@ -16,7 +16,7 @@ function(kernel, arrayUtil, on, aspect, has, put){
 		column.sortable = false;
 
 		function disabled(item) {
-			return !grid.allowSelect(grid.row(item));
+			return !grid.store || !grid.allowSelect(grid.row(item));
 		}
 		
 		function changeInput(value){
