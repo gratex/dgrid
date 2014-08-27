@@ -16,7 +16,9 @@ function(kernel, arrayUtil, on, aspect, has, put){
 		column.sortable = false;
 
 		function disabled(item) {
-			return !grid.store || !grid.allowSelect(grid.row(item));
+			//[GTI][AR]: if store is not defined, do not call g.row (othrwise error)
+			//enable option (it is header-selectAll) 
+			return !!grid.store && !grid.allowSelect(grid.row(item));
 		}
 		
 		function changeInput(value){
