@@ -119,20 +119,7 @@ var Keyboard = declare(null, {
 				}
 			}));
 			
-			grid._listeners.push(on(areaNode, "keydown", function(event){
-				// For now, don't squash browser-specific functionalities by letting
-				// ALT and META function as they would natively
-				if(event.metaKey || event.altKey) {
-					return;
-				}
-				
-				var handler = grid[isHeader ? "headerKeyMap" : "keyMap"][event.keyCode];
-				
-				// Text boxes and other inputs that can use direction keys should be ignored and not affect cell/row navigation
-				if(handler && !handledEvent(event)){
-					handler.call(grid, event);
-				}
-			}));
+			grid._listeners.push(on(areaNode, "keydown", lang.hitch(grid, "_onKeyDown", isHeader, handledEvent)));
 		}
 		
 		if(this.tabableHeader){
@@ -142,6 +129,21 @@ var Keyboard = declare(null, {
 			});
 		}
 		enableNavigation(this.contentNode);
+	},
+	
+	_onKeyDown: function(isHeader, handledEvent, event){
+		// For now, don't squash browser-specific functionalities by letting
+		// ALT and META function as they would natively
+		if(event.metaKey || event.altKey) {
+			return;
+		}
+		
+		var handler = this[isHeader ? "headerKeyMap" : "keyMap"][event.keyCode];
+		
+		// Text boxes and other inputs that can use direction keys should be ignored and not affect cell/row navigation
+		if(handler && !handledEvent(event)){
+			handler.call(this, event);
+		}
 	},
 	
 	removeRow: function(rowElement){
