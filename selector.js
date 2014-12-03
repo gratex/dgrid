@@ -168,14 +168,20 @@ function(kernel, arrayUtil, on, aspect, has, put){
 			return input;
 		};
 		
+		listeners.push(//[GTI]MR: push handler into listeners and destroy it properly
 		aspect.after(column, "init", function(){
 			grid = column.grid;
-		});
+		})//
+		);
 		
+		listeners.push(//[GTI]MR: push handler into listeners and destroy it properly
 		aspect.after(column, "destroy", function(){
-			arrayUtil.forEach(listeners, function(l){ l.remove(); });
+			arrayUtil.forEach(listeners, function(l){ 
+				l.remove(); 
+			});
 			grid._hasSelectorInputListener = false;
-		});
+		})//
+		);
 		
 		column.renderCell = function(object, value, cell, options, header){
 			var row = object && grid.row(object);

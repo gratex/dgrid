@@ -66,9 +66,10 @@ return declare([List, _StoreMixin], {
 		this.inherited(arguments);
 		var self = this;
 		// check visibility on scroll events
-		listen(this.bodyNode, "scroll",
+		//[GTI]MR: push handler into _listeners to destroy it properly
+		this._listeners.push(listen(this.bodyNode, "scroll",
 			miscUtil[this.pagingMethod](function(event){ self._processScroll(event); },
-				null, this.pagingDelay));
+				null, this.pagingDelay)));
 	},
 	
 	renderQuery: function(query, preloadNode, options){

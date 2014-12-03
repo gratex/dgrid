@@ -276,7 +276,8 @@ return declare(null, {
 
 		if(!grid.mouseMoveListen){
 			// establish listeners for initiating, dragging, and finishing resize
-			listen(grid.headerNode,
+			//GTI:MR save listener
+			grid._listeners.push(listen(grid.headerNode,
 				".dgrid-resize-handle:mousedown" +
 					(has("touch") ? ",.dgrid-resize-handle:touchstart" : ""),
 				function(e){
@@ -284,7 +285,7 @@ return declare(null, {
 					grid.mouseMoveListen.resume();
 					grid.mouseUpListen.resume();
 				}
-			);
+			));
 			grid._listeners.push(grid.mouseMoveListen = listen.pausable(document,
 				"mousemove" + (has("touch") ? ",touchmove" : ""),
 				miscUtil.throttleDelayed(function(e){ grid._updateResizerPosition(e); })
