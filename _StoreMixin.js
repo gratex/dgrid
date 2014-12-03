@@ -69,7 +69,8 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this._columnsWithSet = {};
 
 			// Reset _columnsWithSet whenever column configuration is reset
-			aspect.before(this, "configStructure", lang.hitch(this, function(){
+			//[GTI]MR save handler to be able to remove it
+			this._configStructureHandle = aspect.before(this, "configStructure", lang.hitch(this, function(){
 				this._columnsWithSet = {};
 			}));
 		},
@@ -85,6 +86,10 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this.inherited(arguments);
 			if(this._notifyHandle){
 				this._notifyHandle.remove();
+			}
+			//[GTI]MR remove handler
+			if(this._configStructureHandle){
+				this._configStructureHandle.remove();
 			}
 		},
 		

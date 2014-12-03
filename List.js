@@ -275,8 +275,8 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 				domNode.className += " dgrid-rtl" +
 					(has("dom-rtl-scrollbar-left") ? " dgrid-rtl-swap" : "");
 			}
-			
-			listen(bodyNode, "scroll", function(event){
+			//[GTI]MR: push handler into _listeners to destroy it properly
+			this._listeners.push(listen(bodyNode, "scroll", function(event){
 				if(self.showHeader){
 					// keep the header aligned with the body
 					headerNode.scrollLeft = event.scrollLeft || bodyNode.scrollLeft;
@@ -284,7 +284,7 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 				// re-fire, since browsers are not consistent about propagation here
 				event.stopPropagation();
 				listen.emit(domNode, "scroll", {scrollTarget: bodyNode});
-			});
+			}));
 			this.configStructure();
 			this.renderHeader();
 			

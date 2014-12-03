@@ -182,9 +182,12 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 				}
 			} else {
 				// first-time-only operations: hook up event/aspected handlers
-				aspect.after(this, "resize", reposition, true);
-				aspect.after(this, "styleColumn", reposition, true);
-				listen(domNode, ".dgrid-column-set:dgrid-cellfocusin", lang.hitch(this, '_onColumnSetScroll'));
+				//[GTI]MR: push handlers into _listeners to destroy it properly
+				this._listeners.push(//
+					aspect.after(this, "resize", reposition, true), //
+					aspect.after(this, "styleColumn", reposition, true), //
+					listen(domNode, ".dgrid-column-set:dgrid-cellfocusin", lang.hitch(this, '_onColumnSetScroll'))//
+				);
 			}
 			
 			// reset to new object to be populated in loop below
@@ -275,7 +278,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 				put(this.domNode, "div.dgrid-column-set-scroller.dgrid-column-set-scroller-" + i +
 					"[" + colsetidAttr + "=" + i +"]");
 			this._columnSetScrollerContents[i] = put(scroller, "div.dgrid-column-set-scroller-content");
-			listen(scroller, "scroll", lang.hitch(this, '_onColumnSetScroll'));
+			this._listeners.push(listen(scroller, "scroll", lang.hitch(this, '_onColumnSetScroll')));
 		},
 
 		_onColumnSetScroll: function (evt){
