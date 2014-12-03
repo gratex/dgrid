@@ -180,6 +180,12 @@ return declare(null, {
 		if(this._selectstartHandle){ this._selectstartHandle.remove(); }
 		if(this._unselectableHandle){ this._unselectableHandle.remove(); }
 		if(this._removeDeselectSignals){ this._removeDeselectSignals(); }
+		if(this._setStoreHandle){ this._removeDeselectSignals(); }
+		//[GTI]MR remove handlers
+		this._setStoreHandle && this._setStoreHandle.remove();
+		this._selectionTouchEvent1 && this._selectionTouchEvent1.remove();
+		this._selectionTouchEvent2 && this._selectionTouchEvent2.remove();
+		this._selectionTouchEvent3 && this._selectionTouchEvent3.remove();
 	},
 	
 	_setSelectionMode: function(mode){
@@ -317,11 +323,13 @@ return declare(null, {
 		if(has("touch") && !has("pointer") && this.selectionTouchEvents){
 			// Listen for taps, and also for mouse/keyboard, making sure not
 			// to trigger both for the same interaction
-			on(contentNode, touchUtil.selector(selector, this.selectionTouchEvents), function(evt){
+			//[GTI]MR save handler to be able to remove it
+			this._selectionTouchEvent1 = on(contentNode, touchUtil.selector(selector, this.selectionTouchEvents), function(evt){
 				grid._handleSelect(evt, this);
 				grid._ignoreMouseSelect = this;
 			});
-			on(contentNode, on.selector(selector, this.selectionEvents), function(event){
+			//[GTI]MR save handler to be able to remove it
+			this._selectionTouchEvent2 = on(contentNode, on.selector(selector, this.selectionEvents), function(event){
 				if(grid._ignoreMouseSelect !== this){
 					grid._handleSelect(event, this);
 				}else if(event.type === upType){
@@ -330,7 +338,8 @@ return declare(null, {
 			});
 		}else{
 			// Listen for mouse/keyboard actions that should cause selections
-			on(contentNode, on.selector(selector, this.selectionEvents), function(event){
+			//[GTI]MR save handler to be able to remove it
+			this._selectionTouchEvent3 = on(contentNode, on.selector(selector, this.selectionEvents), function(event){
 				grid._handleSelect(event, this);
 			});
 		}
@@ -358,7 +367,8 @@ return declare(null, {
 		
 		// Update aspects if there is a store change
 		if(this._setStore){
-			aspect.after(this, "_setStore", function(){
+			//[GTI]MR save handler to be able to remove it
+			this._setStoreHandle = aspect.after(this, "_setStore", function(){
 				grid._updateDeselectionAspect();
 			});
 		}
