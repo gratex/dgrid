@@ -1,5 +1,5 @@
-define(["dojo/_base/declare", "dojo/has", "dojo/on", "../util/misc", "put-selector/put", "dojo/i18n!./nls/columnHider", "xstyle/css!../css/extensions/ColumnHider.css"],
-function(declare, has, listen, miscUtil, put, i18n){
+define(["dojo/_base/declare", "dojo/has", "dojo/on", "../util/misc", "put-selector/put", "dojo/i18n!./nls/columnHider", "dojo/dom-attr", "xstyle/css!../css/extensions/ColumnHider.css"],
+function(declare, has, listen, miscUtil, put, i18n, domAttr){
 /*
  *	Column Hider plugin for dgrid
  *	Originally contributed by TRT 2011-09-28
@@ -29,7 +29,10 @@ function(declare, has, listen, miscUtil, put, i18n){
 		// Given one of the checkboxes from the hider menu,
 		// return the id of the corresponding column.
 		// (e.g. gridIDhere-hider-menu-check-colIDhere -> colIDhere)
-		return cb.id.substr(grid.id.length + 18);
+
+		//return cb.id.substr(grid.id.length + 18);
+		//MR: added to support nested properties
+		return domAttr.get(cb.id, "data-field");
 	}
 	
 	return declare(null, {
@@ -58,12 +61,17 @@ function(declare, has, listen, miscUtil, put, i18n){
 		//		Hash containing checkboxes generated for menu items.
 		_columnHiderCheckboxes: null,
 		
+		// dataColumnSetIndex: Number
+		//		Index of columnset to use when generating checkboxes
+		dataColumnSetIndex: 0,//[GTI]:AR,PM: added new prop
+		
 		_renderHiderMenuEntries: function(){
 			// summary:
 			//		Iterates over subRows for the sake of adding items to the
 			//		column hider menu.
 			
-			var subRows = this.subRows,
+			//[GTI]PK: to support column hider also with columnSets (select a columnset to apply column hider on)
+			var subRows = this.columnSets ? this.columnSets[this.dataColumnSetIndex || 0] : this.subRows,
 				first = true,
 				srLength, cLength, sr, c;
 			
@@ -106,7 +114,7 @@ function(declare, has, listen, miscUtil, put, i18n){
 			// put-selector can't handle invalid selector characters, and the
 			// ID could have some, so add it directly
 			checkbox = this._columnHiderCheckboxes[id] =
-				put(div, "input.dgrid-hider-menu-check.hider-menu-check-" + replacedId + "[type=checkbox]");
+				put(div, "input.dgrid-hider-menu-check.hider-menu-check-" + replacedId + "[type=checkbox][data-field=" + id + "]"); //MR added data-field attribute for nested properties support
 			checkbox.id = checkId;
 			
 			label = put(div, "label.dgrid-hider-menu-label.hider-menu-label-" + replacedId +

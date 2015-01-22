@@ -29,7 +29,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 		}
 	}
 	
-	return declare(null, {
+	var _StoreMixin = declare(null, {
 		// store: Object
 		//		The object store (implementing the dojo/store API) from which data is
 		//		to be fetched.
@@ -69,7 +69,8 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this._columnsWithSet = {};
 
 			// Reset _columnsWithSet whenever column configuration is reset
-			aspect.before(this, "configStructure", lang.hitch(this, function(){
+			//[GTI]MR save handler to be able to remove it
+			this._configStructureHandle = aspect.before(this, "configStructure", lang.hitch(this, function(){
 				this._columnsWithSet = {};
 			}));
 		},
@@ -85,6 +86,10 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this.inherited(arguments);
 			if(this._notifyHandle){
 				this._notifyHandle.remove();
+			}
+			//[GTI]MR remove handler
+			if(this._configStructureHandle){
+				this._configStructureHandle.remove();
 			}
 		},
 		
@@ -160,6 +165,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			// summary:
 			//		Get a fresh queryOptions object, also including the current sort
 			var options = lang.delegate(this.queryOptions, {});
+
 			if(typeof(this._sort) === "function" || this._sort.length){
 				// Prevents SimpleQueryEngine from doing unnecessary "null" sorts (which can
 				// change the ordering in browsers that don't use a stable sort algorithm, eg Chrome)
@@ -211,7 +217,11 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 				// to provide protection for subsequent changes as well
 				object = lang.delegate(object, dirtyObj);
 			}
-			return this.inherited(arguments);
+			var row = this.inherited(arguments);
+			if (dirtyObj) { //mark dirty row
+				put(row, ".dgrid-row-dirty");
+			}
+			return row;
 		},
 		
 		updateDirty: function(id, field, value){
@@ -223,7 +233,12 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			if(!dirtyObj){
 				dirtyObj = dirty[id] = {};
 			}
-			dirtyObj[field] = value;
+			lang.setObject(field, value, dirtyObj);//[GTI]MR: support for nested props
+			
+			var row = this.row(id); //[GTI] support for 'dirty' class
+			if (row && row.element) { //if we updating `future` row, element do not exist
+				put(row.element, ".dgrid-row-dirty");
+			}
 		},
 		setDirty: function(id, field, value){
 			kernel.deprecated("setDirty(...)", "use updateDirty() instead", "dgrid 0.4");
@@ -305,7 +320,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this.refresh();
 		},
 		
-		_trackError: function(func){
+		_trackError: function(func, args){
 			// summary:
 			//		Utility function to handle emitting of error events.
 			// func: Function|String
@@ -314,28 +329,32 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			//		If sync, it can return a value, but may throw an error on failure.
 			//		If async, it should return a promise, which would fire the error
 			//		callback on failure.
+			// args: Array? [GTI]
+			//		Optional additional arguments, which callcback function "func" can be called
 			// tags:
 			//		protected
 			
 			var result;
 			
-			if(typeof func == "string"){ func = lang.hitch(this, func); }
+			if(typeof func == "string"){ func = this[func]; } //[GTI] use this[func], instead of lang.hitch(this, func)
 			
 			try{
-				result = func();
+				result = func.apply(this, args || []); // [GTI] allow to call func with additional arguments
 			}catch(err){
 				// report sync error
-				emitError.call(this, err);
+				_StoreMixin.emitError.call(this, err);//[GTI] replaced to use exposed method
 			}
 			
 			// wrap in when call to handle reporting of potential async error
-			return Deferred.when(result, noop, lang.hitch(this, emitError));
+			return Deferred.when(result, noop, lang.hitch(this, _StoreMixin.emitError));//[GTI] replaced to use exposed method
 		},
 		
 		newRow: function(){
 			// Override to remove no data message when a new row appears.
 			// Run inherited logic first to prevent confusion due to noDataNode
 			// no longer being present as a sibling.
+
+			put(this.domNode, "!grid-no-data");//[GTI] add cusom class for grid with no data
 			var row = this.inherited(arguments);
 			if(this.noDataNode){
 				put(this.noDataNode, "!");
@@ -352,8 +371,14 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 				// ...we are empty, so show the no data message.
 				this.noDataNode = put(this.contentNode, "div.dgrid-no-data");
 				this.noDataNode.innerHTML = this.noDataMessage;
+				//[GTI] AK - add our custom no-data class to dgrid
+				put(this.domNode, ".grid-no-data");
 			}
 			return this.inherited(arguments);
 		}
 	});
+	
+
+	_StoreMixin.emitError = emitError;//[GTI]AR: exposed, so may be overriden
+	return _StoreMixin;
 });

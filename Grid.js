@@ -1,5 +1,5 @@
-define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "put-selector/put", "./List", "./util/misc", "dojo/_base/sniff"],
-function(kernel, declare, listen, has, put, List, miscUtil){
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "put-selector/put", "./List", "./util/misc", "dojo/_base/lang", "dojo/_base/sniff"],
+function(kernel, declare, listen, has, put, List, miscUtil, lang){
 	var contentBoxSizing = has("ie") < 8 && !has("quirks");
 	
 	function appendIfNode(parent, subNode){
@@ -166,7 +166,12 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 				if(column.get){
 					data = column.get(object);
 				}else if("field" in column && column.field != "_item"){
-					data = data[column.field];
+					//[GTI]MR Support reading also nested properties (overidable by 'ignoreDotInField')
+					if (column.ignoreDotInField) {
+						data = data[column.field];
+					} else {
+						data = lang.getObject(column.field, false, data);
+					}
 				}
 				
 				if(column.renderCell){
@@ -174,7 +179,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 					// event handling, etc.
 					appendIfNode(td, column.renderCell(object, data, td, options));
 				}else{
-					defaultRenderCell.call(column, object, data, td, options);
+					Grid.defaultRenderCell.call(column, object, data, td, options);//[GTI]AR,PM:use exposed method, so it may be overriden
 				}
 			}, options && options.subRows, object);
 			// row gets a wrapper div for a couple reasons:

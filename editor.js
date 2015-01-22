@@ -9,8 +9,9 @@ define([
 	"dojo/query",
 	"./Grid",
 	"put-selector/put",
+	"dijit/form/CheckBox",
 	"dojo/_base/sniff"
-], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, query, Grid, put){
+], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, query, Grid, put, CheckBox){
 
 function updateInputValue(input, value){
 	// common code for updating value of a standard input
@@ -37,11 +38,16 @@ function dataFromValue(value, oldValue){
 // intermediary frontend to dataFromValue for HTML and widget editors
 function dataFromEditor(column, cmp){
 	if(typeof cmp.get == "function"){ // widget
-		return dataFromValue(cmp.get("value"));
+		var value = cmp.get(cmp.isInstanceOf(CheckBox) ? "checked" : "value"); //[GTI]: if chechbox, use checked prop as value
+		return dataFromValue(value);
 	}else{ // HTML input
 		return dataFromValue(
 			cmp[cmp.type == "checkbox" || cmp.type == "radio"  ? "checked" : "value"]);
 	}
+}
+
+function dataToEditor(column, cmp, value) { //[GTI]: extracted as method, so may be overriden + checkbox handling
+	cmp.set(cmp.isInstanceOf(CheckBox) ? "checked" : "value", value);
 }
 
 function setProperty(grid, cell, oldValue, value, triggerEvent){
@@ -88,7 +94,8 @@ function setProperty(grid, cell, oldValue, value, triggerEvent){
 					// onChange handler and prevent dgrid-datachange from firing
 					// a second time
 					cmp._dgridIgnoreChange = true;
-					cmp.set("value", oldValue);
+					var dte = column.dataToEditor || dataToEditor; //[GTI] AR: dataToEditor added
+					dte(column, cmp, oldValue);
 					setTimeout(function(){ cmp._dgridIgnoreChange = false; }, 0);
 				}else if((cmp = cellElement.input)){
 					updateInputValue(cmp, oldValue);
@@ -110,10 +117,11 @@ function setPropertyFromEditor(grid, cmp, triggerEvent) {
 		editedRow,
 		activeCell = grid._activeCell;
 	
-	if(!cmp.isValid || cmp.isValid()){
+	if(!cmp.isValid || cmp.isValid()){		
+		var dfe=column.dataFromEditor || dataFromEditor; //[GTI]AR: allow to set data from editor function on cell
 		value = setProperty(grid, cell,
 			activeCell ? grid._activeValue : cmp._dgridLastValue,
-			dataFromEditor(column, cmp), triggerEvent);
+					dfe(column, cmp), triggerEvent);
 		
 		if(activeCell){ // for editors with editOn defined
 			grid._activeValue = value;
@@ -121,7 +129,8 @@ function setPropertyFromEditor(grid, cmp, triggerEvent) {
 			cmp._dgridLastValue = value;
 		}
 
-		if(cmp.type === "radio" && cmp.name && !column.editOn && column.field){
+		//[GTI]//LZ: "!cmp.domNode" added so that only native inputs are processed, this code doesn't work with widgets
+		if(!cmp.domNode && cmp.type === "radio" && cmp.name && !column.editOn && column.field){
 			editedRow = grid.row(cmp);
 			
 			// Update all other rendered radio buttons in the group
@@ -226,7 +235,11 @@ function createSharedEditor(column, originalRenderCell){
 		node = cmp.domNode || cmp,
 		focusNode = cmp.focusNode || node,
 		reset = isWidget ?
-			function(){ cmp.set("value", cmp._dgridLastValue); } :
+			function(){ 
+				//[GTI] AR: dataToEditor added
+				var dte = column.dataToEditor || dataToEditor;
+				dte(column, cmp, cmp._dgridLastValue);
+			} :
 			function(){
 				updateInputValue(cmp, cmp._dgridLastValue);
 				// call setProperty again in case we need to revert a previous change
@@ -266,7 +279,11 @@ function createSharedEditor(column, originalRenderCell){
 		});
 		column._editorBlurHandle.pause();
 		// Remove the editor from the cell, to be reused later.
-		parentNode.removeChild(node);
+		try{
+			parentNode.removeChild(node);
+		}catch(e){
+			//[GTI]MR: empty catch block; prevent WebKit from throwing DOM Exception 8
+		}
 		
 		if(cell.row){
 			// If the row is still present (i.e. we didn't blur due to removal),
@@ -330,7 +347,9 @@ function showEditor(cmp, column, cellElement, value){
 		// Set value, but ensure it isn't processed as a user-generated change.
 		// (Clear flag on a timeout to wait for delayed onChange to fire first)
 		cmp._dgridIgnoreChange = true;
-		cmp.set("value", value);
+		//[GTI]AR: dataToEditor added
+		var dte = column.dataToEditor || dataToEditor;
+		dte(column, cmp, value);
 		setTimeout(function(){ cmp._dgridIgnoreChange = false; }, 0);
 	}
 	// track previous value for short-circuiting or in case we need to revert
@@ -349,6 +368,20 @@ function showEditor(cmp, column, cellElement, value){
 			cancelable: false
 		});
 	}
+}
+
+//[GTI] added function to support nested props
+function existsInNested(field, obj) {
+	var parts = field.split('.');
+    for(var i = 0, l = parts.length; i < l; i++) {
+    	var part = parts[i];
+        if(Object.prototype.toString.call(obj) === "[object Object]" && part in obj) {
+        	obj = obj[part];
+        }else {
+    		return false;
+        }
+    }
+    return true;
 }
 
 function edit(cell) {
@@ -393,8 +426,9 @@ function edit(cell) {
 			// get the cell value
 			row = cell.row;
 			dirty = this.dirty && this.dirty[row.id];
-			value = (dirty && field in dirty) ? dirty[field] :
-				column.get ? column.get(row.data) : row.data[field];
+			//[GTI]MR: added support for nested properties
+			value = (dirty && existsInNested(field, dirty)) ? lang.getObject(field, false, dirty) :				
+				column.get ? column.get(row.data) : lang.getObject(field, false, row.data);
 			// check to see if the cell can be edited
 			if(!column.canEdit || column.canEdit(cell.row.data, value)){
 				dfd = new Deferred();

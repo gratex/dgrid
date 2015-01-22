@@ -1,5 +1,5 @@
-define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/dom", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"],
-function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put){
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/dom", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/array", "dijit/registry", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"],
+function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put, array, registry){
 	// Add user agent/feature CSS classes 
 	hasClass("mozilla", "opera", "webkit", "ie", "ie-6", "ie-6-7", "quirks", "no-quirks", "touch");
 	
@@ -180,6 +180,7 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 		listType: "list",
 		
 		create: function(params, srcNodeRef){
+			this._rowsListeners = {};//[GTI] added object, where handlers on rows may be added and will be removed when row destroyed 
 			var domNode = this.domNode = srcNodeRef || put("div"),
 				cls;
 			
@@ -274,8 +275,8 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 				domNode.className += " dgrid-rtl" +
 					(has("dom-rtl-scrollbar-left") ? " dgrid-rtl-swap" : "");
 			}
-			
-			listen(bodyNode, "scroll", function(event){
+			//[GTI]MR: push handler into _listeners to destroy it properly
+			this._listeners.push(listen(bodyNode, "scroll", function(event){
 				if(self.showHeader){
 					// keep the header aligned with the body
 					headerNode.scrollLeft = event.scrollLeft || bodyNode.scrollLeft;
@@ -283,7 +284,7 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 				// re-fire, since browsers are not consistent about propagation here
 				event.stopPropagation();
 				listen.emit(domNode, "scroll", {scrollTarget: bodyNode});
-			});
+			}));
 			this.configStructure();
 			this.renderHeader();
 			
@@ -443,6 +444,7 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 				// Only call TouchScroll#destroy if we also initialized it
 				this.inherited(arguments);
 			}
+			this._destroyed = true; //[GTI] added flag, so it is same as other widgets
 		},
 		refresh: function(){
 			// summary:
@@ -458,15 +460,20 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 		},
 		
 		newRow: function(object, parentNode, beforeNode, i, options){
+			var row;
 			if(parentNode){
-				var row = this.insertRow(object, parentNode, beforeNode, i, options);
+				row = this.insertRow(object, parentNode, beforeNode, i, options);
 				put(row, ".dgrid-highlight" +
 					(this.addUiClasses ? ".ui-state-highlight" : ""));
 				setTimeout(function(){
 					put(row, "!dgrid-highlight!ui-state-highlight");
 				}, this.highlightDuration);
-				return row;
 			}
+			array.forEach(options.startupWidgets || [], function(w) {
+				w.startup();
+			});
+			options.startupWidgets = []; // cleanup
+			return row;
 		},
 		adjustRowIndices: function(firstRow){
 			// this traverses through rows to maintain odd/even classes on the rows when indexes shift;
@@ -491,7 +498,13 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 			//		This renders an array or collection of objects as rows in the grid, before the
 			//		given node. This will listen for changes in the collection if an observe method
 			//		is available (as it should be if it comes from an Observable data store).
+			
+			
+			//[GTI]AR Start widgets created by renderCelll method, because now, they are really placed in the DOM
+			//	 renderCell should not start widgets by itself, but place them into startupWidgets property on options objects.
+			
 			options = options || {};
+			options.startupWidgets = []; //[GTI]
 			var self = this,
 				start = options.start || 0,
 				observers = this.observers,
@@ -696,6 +709,7 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 							// so that we can determine page boundary changes
 							// (but return the original set)
 							overlapRows(1, 1, 0, 0);
+							startupWidgets(options);//[GTI] support for startupWidgets
 							return originalRows;
 						});
 					});
@@ -710,6 +724,16 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 			whenDone(rows);
 			overlapRows(1, 1, 0, 0);
 			// Return the original rows, not the overlapped set
+
+			//[GTI] support for startupWidgets
+			function startupWidgets(options){
+				array.forEach(options.startupWidgets, function(w) {
+					w.startup();
+				});
+				options.startupWidgets = []; // cleanup
+			}			
+			startupWidgets(options);
+			
 			return originalRows;
 		},
 
@@ -774,6 +798,22 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 			//		If true, the row element will not be removed from the DOM; this can
 			//		be used by extensions/plugins in cases where the DOM will be
 			//		massively cleaned up at a later point in time.
+			
+			//[GTI] added removing all rows widgets and listeners
+			array.forEach(registry.findWidgets(rowElement), function(w) {
+				if (w.destroyRecursive) {
+					w.destroyRecursive();
+				} else if (w.destroy) {
+					w.destroy();
+				}
+			});
+
+			//destroy listeners on row
+			array.forEach(this._rowsListeners[rowElement.id], function(listener) {
+				listener.remove();
+			});
+			delete this._rowsListeners[rowElement.id];
+			//[GTI] end
 			
 			rowElement = rowElement.element || rowElement;
 			delete this._rowIdToObject[rowElement.id];

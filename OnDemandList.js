@@ -66,9 +66,10 @@ return declare([List, _StoreMixin], {
 		this.inherited(arguments);
 		var self = this;
 		// check visibility on scroll events
-		listen(this.bodyNode, "scroll",
+		//[GTI]MR: push handler into _listeners to destroy it properly
+		this._listeners.push(listen(this.bodyNode, "scroll",
 			miscUtil[this.pagingMethod](function(event){ self._processScroll(event); },
-				null, this.pagingDelay));
+				null, this.pagingDelay)));
 	},
 	
 	renderQuery: function(query, preloadNode, options){
@@ -171,6 +172,8 @@ return declare([List, _StoreMixin], {
 					self._total = total;
 				}
 				// now we need to adjust the height and total count based on the first result set
+				//[GTI] AK - add/remove our custom no-data class to dgrid, check trCount if total is NaN
+				put(self.domNode, (total || trCount ? "!" : ".") + "grid-no-data");
 				if(total === 0){
 					if(noDataNode){
 						put(noDataNode, "!");
@@ -187,7 +190,12 @@ return declare([List, _StoreMixin], {
 				// only update rowHeight if we actually got results and are visible
 				if(trCount && height){ self.rowHeight = height / trCount; }
 				
-				total -= trCount;
+				//[GTI]MR:support for uknown total
+				if(isNaN(total)){
+					total = (options.count > trCount) ? 0 : self.minRowsPerPage;
+				}else{
+					total -= trCount;
+				}
 				preload.count = total;
 				preloadNode.rowIndex = trCount;
 				if(total){
@@ -246,12 +254,23 @@ return declare([List, _StoreMixin], {
 		
 		this.inherited(arguments);
 		if(this.store){
+			
+			//[GTI]AR, PM: cancel previous refresh if it exists
+			// it will cause error, witch is catched (ignored) by emit error in _StoreMixin extension
+			if(this._queryPromise && !this._queryPromise.isFulfilled()){
+				this._queryPromise.cancel();
+			}
+			
 			// render the query
 			dfd = this._refreshDeferred = new Deferred();
 			
 			// renderQuery calls _trackError internally
 			results = self.renderQuery(function(queryOptions){
-				return self.store.query(self.query, queryOptions);
+				var promiseOrValue = self.store.query(self.query, queryOptions);
+				if(promiseOrValue.then){//[GTI]AR, PM: cancel previous refresh if it exists
+					self._queryPromise = promiseOrValue;
+				}
+				return promiseOrValue;
 			});
 			if(typeof results === "undefined"){
 				// Synchronous error occurred; reject the refresh promise.
@@ -562,18 +581,26 @@ return declare([List, _StoreMixin], {
 								// if it is below, we will use the total from the results to update
 								// the count of the last preload in case the total changes as later pages are retrieved
 								// (not uncommon when total counts are estimated for db perf reasons)
-								
-								// recalculate the count
-								below.count = total - below.node.rowIndex;
-								// check to see if we are on the last page
-								if(below.count === 0){
-									// This is a hack to get Observable to recognize that this is the
-									// last page; if the count doesn't match results.length, Observable
-									// will think this is the last page and properly handle additions to the bottom
-									options.count++;
-								}
-								// readjust the height
-								adjustHeight(below);
+																
+								//[GTI]MR:support for unknow total
+								if(isNaN(total)){
+									Deferred.when(results, function(results){
+										below.count = (options.count > results.length) ? 0 : grid.minRowsPerPage;
+										adjustHeight(below);
+									});
+								}else{
+									// recalculate the count
+									below.count = total - below.node.rowIndex;
+									// check to see if we are on the last page
+									if(below.count === 0){
+										// This is a hack to get Observable to recognize that this is the
+										// last page; if the count doesn't match results.length, Observable
+										// will think this is the last page and properly handle additions to the bottom
+										options.count++;
+									}
+									// readjust the height
+									adjustHeight(below);
+								}			
 							}
 						});
 						
