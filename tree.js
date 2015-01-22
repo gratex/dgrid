@@ -184,6 +184,18 @@ function tree(column){
 			// after data is retrieved
 			dfd.resolve();
 			
+			var expanded = expand === undefined ? !this._expanded[row.id] : expand;
+			
+			//AR: Only update _expanded map, not rendered yet
+			if(!row.element){
+				if(expanded){
+					this._expanded[row.id] = true;
+				}else{
+					delete this._expanded[row.id];
+				}
+				return;
+			}
+			
 			target = row.element;
 			target = target.className.indexOf("dgrid-expando-icon") > -1 ? target :
 				querySelector(".dgrid-expando-icon", target)[0];
@@ -191,7 +203,6 @@ function tree(column){
 			if(target && target.mayHaveChildren &&
 					(noTransition || expand !== !!this._expanded[row.id])){
 				// toggle or set expand/collapsed state based on optional 2nd argument
-				var expanded = expand === undefined ? !this._expanded[row.id] : expand;
 				
 				// update the expando display
 				put(target, ".ui-icon-triangle-1-" + (expanded ? "se" : "e") +
