@@ -234,7 +234,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 				dirtyObj = dirty[id] = {};
 			}
 			
-			if(field.includes(".")) {
+			if(~field.indexOf(".")) {
 				var p, d = dirtyObj, parts = field.split(".");
 				while(parts.length) {
 					p = parts.shift();
