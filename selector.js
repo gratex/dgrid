@@ -176,7 +176,6 @@ function(kernel, arrayUtil, on, aspect, has, put){
 
 			//[GTI][MR]: add special class (dgrid-cell-selector) for easy styling.
 			put(parent && parent.contents ? parent : cell, ".dgrid-cell-selector.dgrid-selector");
-			var input = cell.input || (cell.input = put(cell, "input[type="+type + "]", {
 			
 			// [GTI][JU] Use wrapAsDijit to stlye
 			if (column.wrapAsDijit) {
