@@ -16,8 +16,17 @@ function(kernel, arrayUtil, on, aspect, has, put){
 		column.sortable = false;
 
 		function disabled(item) {
-			return !grid.allowSelect(grid.row(item));
+			//[GTI][AR]: if store is not defined, do not call g.row (othrwise error)
+			//enable option (it is header-selectAll) 
+			return !!grid.store && !grid.allowSelect(grid.row(item));
 		}
+		
+		function addDijitClasses(wrapper, checked, disabled) {
+			wrapper.className = [
+				wrapper.baseClass,
+				wrapper.baseClass + (checked ? "Checked" : "") + (disabled ? "Disabled" : "")
+			].join(" ");
+		} 
 		
 		function changeInput(value){
 			// creates a function that modifies the input on an event
@@ -35,6 +44,9 @@ function(kernel, arrayUtil, on, aspect, has, put){
 						// only change the value if it is not disabled
 						element.checked = value;
 						element.setAttribute("aria-checked", value);
+						if (element.wrapper) {
+							addDijitClasses(element.wrapper, element.checked, element.disabled);
+						}
 					}
 				}
 				if(headerCheckbox.type == "checkbox"){
@@ -56,6 +68,10 @@ function(kernel, arrayUtil, on, aspect, has, put){
 						state = "true";
 					}
 					headerCheckbox.setAttribute("aria-checked", state);
+					
+					if (headerCheckbox.wrapper) {
+						addDijitClasses(headerCheckbox.wrapper, grid.allSelected, headerCheckbox.disabled);
+					}
 				}
 			};
 		}
@@ -145,7 +161,8 @@ function(kernel, arrayUtil, on, aspect, has, put){
 		
 		var renderInput = typeof type == "function" ? type : function(value, cell, object){
 			var parent = cell.parentNode,
-				disabled;
+				disabled,
+				wrapper;
 			
 			if(!grid._hasSelectorInputListener){
 				setupSelectionEvents();
@@ -153,16 +170,27 @@ function(kernel, arrayUtil, on, aspect, has, put){
 			
 			// column.disabled gets initialized or wrapped in setupSelectionEvents
 			disabled = column.disabled;
+			disabled = disabled && (typeof disabled == "function" ? disabled.call(column, object) : disabled)
 
 			// must set the class name on the outer cell in IE for keystrokes to be intercepted
+
 			//[GTI][MR]: add special class (dgrid-cell-selector) for easy styling.
 			put(parent && parent.contents ? parent : cell, ".dgrid-cell-selector.dgrid-selector");
-			var input = cell.input || (cell.input = put(cell, "input[type="+type + "]", {
+			
+			// [GTI][JU] Use wrapAsDijit to stlye
+			if (column.wrapAsDijit) {
+				wrapper = cell.wrapper || (cell.wrapper = put(cell, "div"));
+				wrapper.baseClass = type == "checkbox" ? "dijitCheckBox" : "dijitRadio";
+				addDijitClasses(wrapper, value, disabled);
+			}
+			
+			var input = cell.input || (cell.input = put(wrapper || cell, "input[type="+type + "]"
+					+ (column.wrapAsDijit ? ".dijitCheckBoxInput" : ""), {
 				tabIndex: isNaN(column.tabIndex) ? -1 : column.tabIndex,
-				disabled: disabled && (typeof disabled == "function" ?
-					disabled.call(column, object) : disabled),
+				disabled: disabled,
 				checked: value
 			}));
+			input.wrapper = wrapper;
 			input.setAttribute("aria-checked", !!value);
 			
 			return input;
@@ -205,10 +233,10 @@ function(kernel, arrayUtil, on, aspect, has, put){
 				if(!grid._hasSelectorInputListener){
 					setupSelectionEvents();
 				}
+				headerCheckbox = th.lastChild;
 			}else{
-				renderInput(false, th, {});
+				headerCheckbox = renderInput(false, th, {});
 			}
-			headerCheckbox = th.lastChild;
 		};
 		
 		return column;

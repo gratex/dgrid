@@ -233,6 +233,15 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			if(!dirtyObj){
 				dirtyObj = dirty[id] = {};
 			}
+			
+			if(~field.indexOf(".")) {
+				var p, d = dirtyObj, parts = field.split(".");
+				while(parts.length) {
+					p = parts.shift();
+					var isArr = !isNaN(parseInt(parts[0], 10)); // array, if next prop is numeric (non-string) index
+					d = d[p] || (d[p] = !isArr ? {} : []);
+				}
+			}	
 			lang.setObject(field, value, dirtyObj);//[GTI]MR: support for nested props
 			
 			var row = this.row(id); //[GTI] support for 'dirty' class
