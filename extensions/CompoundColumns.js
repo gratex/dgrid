@@ -4,8 +4,9 @@ define([
 	"dojo/sniff",
 	"dojo/query",
 	"../util/misc",
+	"put-selector/put",
 	"xstyle/css!../css/extensions/CompoundColumns.css"
-], function(lang, declare, has, query, miscUtil){
+], function(lang, declare, has, query, miscUtil, put){
 	return declare(null, {
 		// summary:
 		//		Extension allowing for specification of columns with additional
@@ -126,6 +127,16 @@ define([
 			
 			this.inherited(arguments);
 			
+			// [GTI] JU: remove "id" from dgrid-spacer-row to achieve proper a11y
+			var spacerRow = query(".dgrid-spacer-row", this.headerNode)[0];
+			if (spacerRow) {
+				// remove spacer-row header ids (to prevent clash with normal header cells)
+				var ths = query("th", spacerRow);
+				for(i = 0, l = ths.length; i < l; i++){
+					put(ths[i], "[!id]");
+				}
+			}
+			
 			// The object delegation performed in configStructure unfortunately
 			// "protects" the original column definition objects (referenced by
 			// columns and subRows) from obtaining headerNode information, so
@@ -133,6 +144,24 @@ define([
 			for(i = columns.length; i--;){
 				columns[i].headerNode = headerColumns[i].headerNode;
 			}
+		},
+		
+		renderRow : function(){
+			var row = this.inherited(arguments);
+			for(si = 0, sl = this.subRows.length; si < sl; si++){
+				var subRow = this.subRows[si];
+				for(i = 0, l = subRow.length; i < l; i++){
+					var column = subRow[i];
+					if (column.parentColumn && column.parentColumn.showChildHeaders === false) {
+						var headerId = this.id + "-" + (column.id || i);
+						// [GTI] JU:  when no child header is shown, aria-labelledby will have no target.
+						// Instead, add aria-label directly to cell to achieve proper a11y
+						var td = query("[aria-labelledby='" + headerId + "']", row)[0];
+						td && put(td, "[!aria-labelledby][aria-label=" + column.label + "]");
+					}
+				}
+			}
+			return row;
 		},
 		
 		_findSortArrowParent: function(field){
