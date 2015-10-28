@@ -321,6 +321,7 @@ function createSharedEditor(column, originalRenderCell){
 	
 	// hook up blur handler, but don't activate until widget is activated
 	(column._editorBlurHandle = on.pausable(cmp, "blur", onblur)).pause();
+	cmp._dgridSharedEditor = true; // [GTI] JU: mark this editor to prevent destroying of shared instance when edited row is removed/refreshed
 	
 	return cmp;
 }

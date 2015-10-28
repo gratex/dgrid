@@ -801,6 +801,9 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 			
 			//[GTI] added removing all rows widgets and listeners
 			array.forEach(registry.findWidgets(rowElement), function(w) {
+				if (w._dgridSharedEditor) {
+					return; // do not destroy shared editors
+				}
 				if (w.destroyRecursive) {
 					w.destroyRecursive();
 				} else if (w.destroy) {
