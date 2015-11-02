@@ -90,7 +90,7 @@ function(kernel, declare, listen, has, put, List, miscUtil, lang){
 				tbody = (has("ie") < 9 || has("quirks")) ? put(row, "tbody") : row,
 				tr,
 				si, sl, i, l, // iterators
-				subRow, column, id, extraClasses, className,
+				subRow, column, id, headerId, extraClasses, className,
 				cell, innerCell, colSpan, rowSpan; // used inside loops
 			
 			// Allow specification of custom/specific subRows, falling back to
@@ -110,6 +110,7 @@ function(kernel, declare, listen, has, put, List, miscUtil, lang){
 					// iterate through the columns
 					column = subRow[i];
 					id = column.id;
+					headerId = this.id + "-" + (id || i);
 
 					extraClasses = column.field ?
 						".field-" + replaceInvalidChars(column.field) :
@@ -120,7 +121,8 @@ function(kernel, declare, listen, has, put, List, miscUtil, lang){
 						extraClasses += "." + className;
 					}
 
-					cell = put(tag + (
+					// [GTI] JU: add "id" to columnheader & add "aria-labelledby" to gridcell to achieve proper a11y
+					cell = put(tag + ("[" + (tag === "th" ? "id" : "aria-labelledby") + "=" + headerId + "]") + (
 							".dgrid-cell.dgrid-cell-padding" +
 							(id ? ".dgrid-column-" + replaceInvalidChars(id) : "") +
 							extraClasses.replace(/ +/g, ".")

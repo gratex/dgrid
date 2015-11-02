@@ -54,7 +54,7 @@ function setProperty(grid, cell, oldValue, value, triggerEvent){
 	// Updates dirty hash and fires dgrid-datachange event for a changed value.
 	var cellElement, row, column, eventObject;
 	// test whether old and new values are inequal, with coercion (e.g. for Dates)
-	if((oldValue && oldValue.valueOf()) != (value && value.valueOf())){
+	if((oldValue && oldValue.valueOf()) !== (value && value.valueOf())){
 		cellElement = cell.element;
 		row = cell.row;
 		column = cell.column;
@@ -321,6 +321,7 @@ function createSharedEditor(column, originalRenderCell){
 	
 	// hook up blur handler, but don't activate until widget is activated
 	(column._editorBlurHandle = on.pausable(cmp, "blur", onblur)).pause();
+	cmp._dgridSharedEditor = true; // [GTI] JU: mark this editor to prevent destroying of shared instance when edited row is removed/refreshed
 	
 	return cmp;
 }
