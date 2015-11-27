@@ -596,6 +596,10 @@ return function(column, editor, editOn){
 			showEditor(cmp, column, cell, value);
 			// Maintain reference for later use.
 			cell[isWidget ? "widget" : "input"] = cmp;
+			//AR: added support to interact with always-on widgets after render cell
+			if(column.setupWidget) {
+				column.setupWidget(cmp, object,value);
+			}
 		}else{
 			return originalRenderCell.call(column, object, value, cell, options);
 		}
