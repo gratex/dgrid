@@ -110,6 +110,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 		
 		insertRow : function() {//[GTI] added whole method
 			var row = this.inherited(arguments);
+			adjustScrollLeft(this, row); // bugfix 1053
 			var rowId = row.id;
 			var rowListeners = this._rowsListeners[rowId];
 			if (!rowListeners) {
