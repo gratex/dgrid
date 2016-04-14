@@ -71,10 +71,25 @@ var Keyboard = declare(null, {
 					grid._focusedHeaderNode.tabIndex = -1;
 				}
 				if(grid.showHeader){
+					if(cellNavigation){
+						// Get the focused element. Ensure that the focused element
+						// is actually a grid cell, not a column-set-cell or some
+						// other cell that should not be focused
+						for(var i = 0, element, elements = grid.headerNode.getElementsByTagName("th"); (element = elements[i]); ++i){
+							if(isFocusableClass.test(element.className)){
+								grid._focusedHeaderNode = initialNode = element;
+								break;
+							}
+						}
+					}
+					else{
+						grid._focusedHeaderNode = initialNode = grid.headerNode;
+					}
+
 					// Set the tab index only if the header is visible.
-					grid._focusedHeaderNode = initialNode =
-						cellNavigation ? grid.headerNode.getElementsByTagName("th")[0] : grid.headerNode;
-					if(initialNode){ initialNode.tabIndex = grid.tabIndex; }
+					if(initialNode){
+						initialNode.tabIndex = grid.tabIndex;
+					}
 				}
 			}
 			
@@ -129,6 +144,8 @@ var Keyboard = declare(null, {
 			});
 		}
 		enableNavigation(this.contentNode);
+		
+		this._debouncedEnsureScroll = miscUtil.debounce(this._ensureScroll, this);
 	},
 	
 	_onKeyDown: function(isHeader, handledEvent, event){
@@ -264,6 +281,57 @@ var Keyboard = declare(null, {
 			this[isHeader ? "headerKeyMap" : "keyMap"], key, callback, true);
 	},
 	
+	_ensureRowScroll: function(rowElement){
+		// summary:
+		//		Ensures that the entire row is visible within the viewport.
+		//		Called for cell navigation in complex structures.
+
+		var scrollY = this.getScrollPosition().y;
+		if(scrollY > rowElement.offsetTop){
+			// Row starts above the viewport
+			this.scrollTo({ y: rowElement.offsetTop });
+		}
+		else if(scrollY + this.contentNode.offsetHeight < rowElement.offsetTop + rowElement.offsetHeight){
+			// Row ends below the viewport
+			this.scrollTo({ y: rowElement.offsetTop - this.contentNode.offsetHeight + rowElement.offsetHeight });
+		}
+	},
+
+	_ensureColumnScroll: function (cellElement) {
+		// summary:
+		//		Ensures that the entire cell is visible in the viewport.
+		//		Called in cases where the grid can scroll horizontally.
+		
+		var scrollX = this.getScrollPosition().x;
+		var cellLeft = cellElement.offsetLeft;
+		if (scrollX > cellLeft) {
+			this.scrollTo({ x: cellLeft });
+		}
+		else {
+			var bodyWidth = this.bodyNode.clientWidth;
+			var cellWidth = cellElement.offsetWidth;
+			var cellRight = cellLeft + cellWidth;
+			if (scrollX + bodyWidth < cellRight) {
+				// Adjust so that the right side of the cell and grid body align,
+				// unless the cell is actually wider than the body - then align the left sides
+				this.scrollTo({ x: bodyWidth > cellWidth ? cellRight - bodyWidth : cellLeft });
+			}
+		}
+	},
+	
+	_ensureScroll: function (cell, isHeader) {
+		// summary:
+		//		Corrects scroll based on the position of the newly-focused row/cell
+		//		as necessary based on grid configuration and dimensions.
+		
+		if(this.cellNavigation && (this.columnSets || this.subRows.length > 1) && !isHeader){
+			this._ensureRowScroll(cell.row.element);
+		}
+		if(this.bodyNode.clientWidth < this.contentNode.offsetWidth){
+			this._ensureColumnScroll(cell.element);
+		}
+	},
+	
 	_focusOnNode: function(element, isHeader, event){
 		var focusedNodeProperty = "_focused" + (isHeader ? "Header" : "") + "Node",
 			focusedNode = this[focusedNodeProperty],
@@ -282,7 +350,7 @@ var Keyboard = declare(null, {
 			inputs = element.getElementsByTagName("input");
 			for(i = 0, numInputs = inputs.length; i < numInputs; i++){
 				input = inputs[i];
-				if((input.tabIndex != -1 || "lastValue" in input) && !input.disabled){
+				if((input.tabIndex != -1 || "_dgridLastValue" in input) && !input.disabled){
 					// Employ workaround for focus rectangle in IE < 8
 					if(has("ie") < 8){ input.style.position = "relative"; }
 					input.focus();
@@ -349,6 +417,8 @@ var Keyboard = declare(null, {
 		if(event){
 			on.emit(focusedNode, "dgrid-cellfocusin", event);
 		}
+		
+		this._debouncedEnsureScroll(cell, isHeader);
 	},
 	
 	focusHeader: function(element){
@@ -356,7 +426,12 @@ var Keyboard = declare(null, {
 	},
 	
 	focus: function(element){
-		this._focusOnNode(element || this._focusedNode, false);
+		var node = element || this._focusedNode;
+		if(node){
+			this._focusOnNode(node, false);
+		}else{
+			this.contentNode.focus();
+		}
 	}
 });
 

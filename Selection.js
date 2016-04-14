@@ -5,9 +5,9 @@ has.add("dom-comparedocumentposition", function(global, doc, element){
 	return !!element.compareDocumentPosition;
 });
 
-has.add("pointer", function(global, doc, element){
-	return "onpointerdown" in element ? "pointer" :
-		"onmspointerdown" in element ? "MSPointer" : false;
+has.add("pointer", function(global){
+	return "PointerEvent" in global ? "pointer" :
+		"MSPointerEvent" in global ? "MSPointer" : false;
 });
 
 // Add feature test for user-select CSS property for optionally disabling
@@ -466,10 +466,10 @@ return declare(null, {
 		}
 		eventObject[this._selectionTargetType] = queue;
 		
-		on.emit(this.contentNode, "dgrid-" + type, eventObject);
-		
 		// Clear the queue so that the next round of (de)selections starts anew
 		this._selectionEventQueues[type] = [];
+		
+		on.emit(this.contentNode, "dgrid-" + type, eventObject);
 	},
 	
 	_fireSelectionEvents: function(){

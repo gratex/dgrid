@@ -113,7 +113,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 				this._notifyHandle.remove();
 				delete this._notifyHandle;
 			}
-			if(store && typeof store.notify === "function"){
+			if(store && typeof store.notify === "function" && this.shouldObserveStore){
 				this._notifyHandle = aspect.after(store, "notify",
 					lang.hitch(this, "_onNotify"), true);
 				
@@ -147,10 +147,13 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this.query = query !== undefined ? query : this.query;
 			this.queryOptions = queryOptions || this.queryOptions;
 			
-			// If we have new sort criteria, pass them through sort
-			// (which will update _sort and call refresh in itself).
-			// Otherwise, just refresh.
-			sort ? this.set("sort", sort) : this.refresh();
+			// Avoid unnecessary refresh if instance hasn't started yet (startup will refresh)
+			if (this._started) {
+				// If we have new sort criteria, pass them through sort
+				// (which will update _sort and call refresh in itself).
+				// Otherwise, just refresh.
+				sort ? this.set("sort", sort) : this.refresh();
+			}
 		},
 		setStore: function(store, query, queryOptions){
 			kernel.deprecated("setStore(...)", 'use set("store", ...) instead', "dgrid 0.4");
@@ -203,6 +206,31 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			if(object && this._numObservers < 1){
 				this.refresh({ keepScrollPosition: true });
 			}
+		},
+		
+		refresh: function(){
+			var result = this.inherited(arguments);
+			
+			if(!this.store){
+				this.noDataNode = put(this.contentNode, "div.dgrid-no-data");
+				this.noDataNode.innerHTML = this.noDataMessage;
+			}
+			
+			return result;
+		},
+		
+		renderArray: function(){
+			var self = this;
+			var rows = this.inherited(arguments);
+			
+			if(!this.store){
+				Deferred.when(rows, function(resolvedRows){
+					if(resolvedRows.length && self.noDataNode){
+						put(self.noDataNode, "!");
+					}
+				});
+			}
+			return rows;
 		},
 		
 		insertRow: function(object, parent, beforeNode, i, options){
