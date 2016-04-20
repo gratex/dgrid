@@ -179,7 +179,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 				//[GTI]MR: push handlers into _listeners to destroy it properly
 				this._listeners.push(//
 					aspect.after(this, "resize", reposition, true), //
-					aspect.after(this, "styleColumn", reposition, true), //
+					aspect.after(this, "styleColumn", reposition, true)
 				);
 				this._columnSetScrollerNode = put(this.footerNode, "+div.dgrid-column-set-scroller-container");
 			}
