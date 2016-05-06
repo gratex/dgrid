@@ -1,18 +1,10 @@
 define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/Deferred", "dojo/on", "dojo/aspect", "dojo/query", "dojo/has", "./util/misc", "put-selector/put", "xstyle/has-class", "./Grid", "dojo/_base/sniff", "xstyle/css!./css/columnset.css"],
 function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, put, hasClass, Grid){
 	has.add("event-mousewheel", function(global, document, element){
-		return typeof element.onmousewheel !== "undefined";
+		return 'onmousewheel' in element;
 	});
 	has.add("event-wheel", function(global, document, element){
-		var supported = false;
-		// From https://developer.mozilla.org/en-US/docs/Mozilla_event_reference/wheel
-		try{
-			WheelEvent("wheel");
-			supported = true;
-		}catch(e){
-			// empty catch block; prevent debuggers from snagging
-		}
-		return supported;
+		return 'onwheel' in element;
 	});
 
 	var colsetidAttr = "data-dgrid-column-set-id";
@@ -33,14 +25,6 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 		}
 	}
 	
-	function scrollColumnSet(grid, columnSetNode, amount){
-		var id = columnSetNode.getAttribute(colsetidAttr),
-			scroller = grid._columnSetScrollers[id],
-			scrollLeft = scroller.scrollLeft + amount;
-
-		scroller.scrollLeft = scrollLeft < 0 ? 0 : scrollLeft;
-	}
-
 	function getColumnSetSubRows(subRows, columnSetId){
 		// Builds a subRow collection that only contains columns that correspond to
 		// a given column set id.
@@ -67,7 +51,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 
 	var horizMouseWheel = has("event-mousewheel") || has("event-wheel") ? function(grid){
 		return function(target, listener){
-			return listen(target, has("event-wheel") ? "wheel" : "mousewheel", function(event){
+			return listen(target, has("event-mousewheel") ? "mousewheel" : "wheel", function(event){
 				var node = event.target, deltaX;
 				// WebKit will invoke mousewheel handlers with an event target of a text
 				// node; check target and if it's not an element node, start one node higher
@@ -110,6 +94,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 		
 		insertRow : function() {//[GTI] added whole method
 			var row = this.inherited(arguments);
+			adjustScrollLeft(this, row); // bugfix 1053
 			var rowId = row.id;
 			var rowListeners = this._rowsListeners[rowId];
 			if (!rowListeners) {
@@ -123,6 +108,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 			return row;
 		},
 		postCreate: function(){
+			var self = this;
 			this.inherited(arguments);
 			
 			this.on(horizMouseWheel(this), function(grid, colsetNode, amount){
@@ -131,6 +117,9 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 					scrollLeft = scroller.scrollLeft + amount;
 				
 				scroller.scrollLeft = scrollLeft < 0 ? 0 : scrollLeft;
+			});
+			this.on('.dgrid-column-set:dgrid-cellfocusin', function (event) {
+				self._onColumnSetCellFocus(event, this);
 			});
 		},
 		columnSets: [],
@@ -157,7 +146,12 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 			});
 			return rows;
 		},
-
+		insertRow: function(){
+			var row = this.inherited(arguments);
+			adjustScrollLeft(this, row);
+			return row;
+		},
+		
 		renderHeader: function(){
 			// summary:
 			//		Setup the headers for the grid
@@ -185,9 +179,9 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 				//[GTI]MR: push handlers into _listeners to destroy it properly
 				this._listeners.push(//
 					aspect.after(this, "resize", reposition, true), //
-					aspect.after(this, "styleColumn", reposition, true), //
-					listen(domNode, ".dgrid-column-set:dgrid-cellfocusin", lang.hitch(this, '_onColumnSetScroll'))//
+					aspect.after(this, "styleColumn", reposition, true)
 				);
+				this._columnSetScrollerNode = put(this.footerNode, "+div.dgrid-column-set-scroller-container");
 			}
 			
 			// reset to new object to be populated in loop below
@@ -245,26 +239,28 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 				scrollers = this._columnSetScrollers,
 				scrollerContents = this._columnSetScrollerContents,
 				columnSets = this.columnSets,
-				left = 0,
 				scrollerWidth = 0,
 				numScrollers = 0, // tracks number of visible scrollers (sets w/ overflow)
 				i, l, columnSetElement, contentWidth;
 			
 			for(i = 0, l = columnSets.length; i < l; i++){
 				// iterate through the columnSets
-				left += scrollerWidth;
 				columnSetElement = query('.dgrid-column-set[' + colsetidAttr + '="' + i +'"]', domNode)[0];
 				scrollerWidth = columnSetElement.offsetWidth;
 				contentWidth = columnSetElement.firstChild.offsetWidth;
 				scrollerContents[i].style.width = contentWidth + "px";
 				scrollers[i].style.width = scrollerWidth + "px";
-				scrollers[i].style.bottom = this.showFooter ? this.footerNode.offsetHeight + "px" : "0px";
-				// IE seems to need scroll to be set explicitly
-				scrollers[i].style.overflowX = contentWidth > scrollerWidth ? "scroll" : "auto";
-				scrollers[i].style.left = left + "px";
+				
+				if(has("ie") < 9){
+					// IE seems to need scroll to be set explicitly
+					scrollers[i].style.overflowX = contentWidth > scrollerWidth ? "scroll" : "auto";
+				}
+				
 				// Keep track of how many scrollbars we're showing
 				if(contentWidth > scrollerWidth){ numScrollers++; }
 			}
+			
+			this._columnSetScrollerNode.style.bottom = this.showFooter ? this.footerNode.offsetHeight + "px" : "0";
 			
 			// Align bottom of body node depending on whether there are scrollbars
 			this.bodyNode.style.bottom = numScrollers ?
@@ -275,7 +271,11 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 		_putScroller: function (columnSet, i){
 			// function called for each columnSet
 			var scroller = this._columnSetScrollers[i] =
-				put(this.domNode, "div.dgrid-column-set-scroller.dgrid-column-set-scroller-" + i +
+				put(this._columnSetScrollerNode, "span" +
+					// IE8 and old FF need dgrid-scrollbar-height class for scrollbar to be visible,
+					// but for some reason IE11's scrollbar arrows become unresponsive, so avoid applying it there
+					(has("ie") < 9 || has("ff") ? ".dgrid-scrollbar-height" : "") +
+					".dgrid-column-set-scroller.dgrid-column-set-scroller-" + i +
 					"[" + colsetidAttr + "=" + i +"]");
 			this._columnSetScrollerContents[i] = put(scroller, "div.dgrid-column-set-scroller-content");
 			this._listeners.push(listen(scroller, "scroll", lang.hitch(this, '_onColumnSetScroll')));
@@ -312,6 +312,26 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 		setColumnSets: function(columnSets){
 			kernel.deprecated("setColumnSets(...)", 'use set("columnSets", ...) instead', "dgrid 0.4");
 			this.set("columnSets", columnSets);
+		},
+		
+		_scrollColumnSet: function(nodeOrId, offsetLeft){
+			var id = nodeOrId.tagName ? nodeOrId.getAttribute(colsetidAttr) : nodeOrId;
+			var scroller = this._columnSetScrollers[id];
+			scroller.scrollLeft = offsetLeft < 0 ? 0 : offsetLeft;
+		},
+		
+		_onColumnSetCellFocus: function(event, columnSetNode){
+			var focusedNode = event.target;
+			var columnSetId = columnSetNode.getAttribute(colsetidAttr);
+			// columnSetNode's offsetLeft is not always correct,
+			// so get the columnScroller to check offsetLeft against
+			var columnScroller = this._columnSetScrollers[columnSetId];
+			var elementEdge = focusedNode.offsetLeft - columnScroller.scrollLeft + focusedNode.offsetWidth;
+
+			if (elementEdge > columnSetNode.offsetWidth ||
+				columnScroller.scrollLeft > focusedNode.offsetLeft) {
+				this._scrollColumnSet(columnSetNode, focusedNode.offsetLeft);
+			}
 		}
 	});
 });

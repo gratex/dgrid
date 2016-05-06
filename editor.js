@@ -7,11 +7,12 @@ define([
 	"dojo/aspect",
 	"dojo/has",
 	"dojo/query",
+	"dojo/when",
 	"./Grid",
 	"put-selector/put",
 	"dijit/form/CheckBox",
 	"dojo/_base/sniff"
-], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, query, Grid, put, CheckBox){
+], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, query, when, Grid, put, CheckBox){
 
 function updateInputValue(input, value){
 	// common code for updating value of a standard input
@@ -321,6 +322,7 @@ function createSharedEditor(column, originalRenderCell){
 	
 	// hook up blur handler, but don't activate until widget is activated
 	(column._editorBlurHandle = on.pausable(cmp, "blur", onblur)).pause();
+	cmp._dgridSharedEditor = true; // [GTI] JU: mark this editor to prevent destroying of shared instance when edited row is removed/refreshed
 	
 	return cmp;
 }
@@ -329,17 +331,31 @@ function showEditor(cmp, column, cellElement, value){
 	// Places a shared editor into the newly-active cell in the column.
 	// Also called when rendering an editor in an "always-on" editor column.
 	
-	var isWidget = cmp.domNode,
-		grid = column.grid;
+	var isWidget = cmp.domNode;
 	
 	// for regular inputs, we can update the value before even showing it
-	if(!isWidget){ updateInputValue(cmp, value); }
+	if(!isWidget){
+		updateInputValue(cmp, value);
+	}
 	
 	cellElement.innerHTML = "";
 	put(cellElement, ".dgrid-cell-editing");
 	put(cellElement, cmp.domNode || cmp);
 	
-	if(isWidget){
+	if(isWidget && !column.editOn){
+		// Queue arguments to be run once editor is in DOM
+		column.grid._editorsPendingStartup.push([cmp, column, cellElement, value]);
+	}else{
+		startupEditor(cmp, column, cellElement, value);
+	}
+}
+
+function startupEditor(cmp, column, cellElement, value){
+	// Handles editor widget startup logic and updates the editor's value.
+	
+	var grid = column.grid;
+	
+	if(cmp.domNode){
 		// For widgets, ensure startup is called before setting value,
 		// to maximize compatibility with flaky widgets like dijit/form/Select.
 		if(!cmp._started){ cmp.startup(); }
@@ -352,6 +368,7 @@ function showEditor(cmp, column, cellElement, value){
 		dte(column, cmp, value);
 		setTimeout(function(){ cmp._dgridIgnoreChange = false; }, 0);
 	}
+	
 	// track previous value for short-circuiting or in case we need to revert
 	cmp._dgridLastValue = value;
 	// if this is an editor with editOn, also update activeValue
@@ -382,6 +399,14 @@ function existsInNested(field, obj) {
         }
     }
     return true;
+}
+
+function startupPendingEditors(grid){
+	var args = grid._editorsPendingStartup;
+	for(var i = args.length; i--;){
+		startupEditor.apply(null, args[i]);
+	}
+	grid._editorsPendingStartup = [];
 }
 
 function edit(cell) {
@@ -483,6 +508,7 @@ return function(column, editor, editOn){
 		if(!grid.edit){
 			// Only perform this logic once on a given grid
 			grid.edit = edit;
+			grid._editorsPendingStartup = [];
 			
 			listeners.push(on(grid.domNode, '.dgrid-input:focusin', function () {
 				grid._focusedEditorCell = grid.cell(this);
@@ -496,7 +522,7 @@ return function(column, editor, editOn){
 			listeners.push(aspect.before(grid, 'removeRow', function (row) {
 				var focusedCell = grid._focusedEditorCell;
 				row = grid.row(row);
-				if (focusedCell && focusedCell.row.id === row.id) {
+				if (focusedCell && row && focusedCell.row.id === row.id) {
 					previouslyFocusedCell = focusedCell;
 					
 					// Pause the focusout handler until after this row has had
@@ -518,6 +544,20 @@ return function(column, editor, editOn){
 					grid.edit(grid.cell(row, previouslyFocusedCell.column.id));
 				}
 				return rowElement;
+			}));
+			listeners.push(aspect.after(grid, 'renderArray', function (rows) {
+				when(rows, function (resolvedRows) {
+					// Finish processing any pending editors that are now displayed
+					if(resolvedRows.length){
+						startupPendingEditors(grid);
+					}else{
+						grid._editorsPendingStartup = [];
+					}
+				});
+				return rows;
+			}));
+			listeners.push(aspect.after(grid, '_onNotification', function () {
+				startupPendingEditors(grid);
 			}));
 		}
 	}
@@ -571,6 +611,7 @@ return function(column, editor, editOn){
 		// Remove the edit function, so that it (and other one-time listeners)
 		// will be re-added if editor columns are re-initialized
 		column.grid.edit = null;
+		column.grid._editorsPendingStartup = null;
 	});
 	
 	column.renderCell = editOn ? function(object, value, cell, options){
