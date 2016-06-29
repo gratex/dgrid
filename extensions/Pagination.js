@@ -152,7 +152,7 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 				
 				// determine navigation target based on clicked link's class
 				if(this === grid.paginationPreviousNode){
-					grid.gotoPage(curr - 1);
+					grid.gotoPage((curr - 1) || 1);
 				}else if(this === grid.paginationNextNode){
 					grid.gotoPage(curr + 1);
 				}else if(this === grid.paginationFirstNode){
