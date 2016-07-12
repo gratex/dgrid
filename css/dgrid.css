@@ -76,7 +76,7 @@ html.has-quirks .dgrid-header-hidden .dgrid-cell {
 	vertical-align: top;
 	border: 1px solid #ddd;
 	border-top-style: none;
-	
+
 	box-sizing: border-box;
 	-moz-box-sizing: border-box;
 	-ms-box-sizing: border-box;
@@ -173,7 +173,7 @@ html.has-quirks .dgrid-header-hidden .dgrid-cell {
 /* UA-specific hacks*/
 html.has-mozilla .dgrid *:focus, html.has-opera .dgrid *:focus {
 	/* firefox's focus doesn't work by default for divs prior to actually tabbing into it. This fixes that
-	(we don't do any other browsers because we are trying to stay as close to native as possible) */ 
+	(we don't do any other browsers because we are trying to stay as close to native as possible) */
 	outline: 1px dotted;
 }
 html.has-ie-6-7.has-no-quirks .dgrid-row-table {
@@ -182,7 +182,7 @@ html.has-ie-6-7.has-no-quirks .dgrid-row-table {
 }
 html.has-quirks .dgrid-row-table, html.has-ie-6 .dgrid-row-table {
 	/* similar story, height looks too high */
-	height: auto; 
+	height: auto;
 }
 
 html.has-quirks .dgrid-header-scroll,
@@ -213,7 +213,7 @@ html.has-mozilla .dgrid-focus {
 	position: relative;
 	overflow-y: hidden;
 }
-.dgrid-autoheight .dgrid-header-scroll, 
+.dgrid-autoheight .dgrid-header-scroll,
 .dgrid-autoheight .dgrid-scrollbar-width {
 	/* [GTI] JU: hide also .dgrid-scrollbar-width to prevent footer (editor) shifting */
 	display: none;
@@ -225,6 +225,22 @@ html.has-mozilla .dgrid-focus {
 .dgrid-autoheight .dgrid-column-set-scroller {
 	/* [GTI] JU: fix for column-set overlapping bottom row */
 	position: relative;
+}
+
+.dgrid-autoheight-max {
+	height: auto;
+	overflow-y: auto;
+}
+
+.dgrid-autoheight-max .dgrid-scroller {
+	position: relative;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	max-height: 500px;
+}
+
+.dgrid-autoheight-max .dgrid-header-scroll {
+	display: none;
 }
 
 /* indicator of a successful load */
