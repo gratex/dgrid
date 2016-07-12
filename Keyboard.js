@@ -97,8 +97,13 @@ var Keyboard = declare(null, {
 				// Initialize header now (since it's already been rendered),
 				// and aspect after future renderHeader calls to reset focus.
 				initHeader();
-				aspect.after(grid, "renderHeader", initHeader, true);
+				//[GTI]MR: push handler into _listeners and destroy it properly
+				grid._listeners.push(//
+				aspect.after(grid, "renderHeader", initHeader, true)
+				);
 			}else{
+				//[GTI]MR: push handler into _listeners and destroy it properly
+				grid._listeners.push(//
 				aspect.after(grid, "renderArray", function(ret){
 					// summary:
 					//		Ensures the first element of a grid is always keyboard selectable after data has been
@@ -125,7 +130,8 @@ var Keyboard = declare(null, {
 						focusedNode.tabIndex = grid.tabIndex;
 						return ret;
 					});
-				});
+				})//
+				);
 			}
 			
 			grid._listeners.push(on(areaNode, "mousedown", function(event){
@@ -139,9 +145,12 @@ var Keyboard = declare(null, {
 		
 		if(this.tabableHeader){
 			enableNavigation(this.headerNode);
+			//[GTI]MR: push handler into _listeners and destroy it properly
+			grid._listeners.push(//
 			on(this.headerNode, "dgrid-cellfocusin", function(){
 				grid.scrollTo({ x: this.scrollLeft });
-			});
+			})//
+			);
 		}
 		enableNavigation(this.contentNode);
 		

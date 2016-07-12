@@ -186,6 +186,7 @@ return declare(null, {
 		this._selectionTouchEvent1 && this._selectionTouchEvent1.remove();
 		this._selectionTouchEvent2 && this._selectionTouchEvent2.remove();
 		this._selectionTouchEvent3 && this._selectionTouchEvent3.remove();
+		this._keySpacebarHandle && this._keySpacebarHandle.remove();
 	},
 	
 	_setSelectionMode: function(mode){
@@ -346,7 +347,8 @@ return declare(null, {
 		
 		// Also hook up spacebar (for ctrl+space)
 		if(this.addKeyHandler){
-			this.addKeyHandler(32, function(event){
+			//[GTI]MR save handler to be able to remove it
+			this._keySpacebarHandle = this.addKeyHandler(32, function(event){
 				grid._handleSelect(event, event.target);
 			});
 		}

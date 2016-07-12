@@ -1,5 +1,5 @@
-define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/dom", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/array", "dijit/registry", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"],
-function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put, array, registry){
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/dom", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/array", "dijit/registry", "dojo/query", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"],
+function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put, array, registry, query){
 	// Add user agent/feature CSS classes 
 	hasClass("mozilla", "opera", "webkit", "ie", "ie-6", "ie-6-7", "quirks", "no-quirks", "touch");
 	

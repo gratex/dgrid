@@ -173,7 +173,9 @@ function(kernel, arrayUtil, on, aspect, has, put){
 			disabled = disabled && (typeof disabled == "function" ? disabled.call(column, object) : disabled)
 
 			// must set the class name on the outer cell in IE for keystrokes to be intercepted
-			put(parent && parent.contents ? parent : cell, ".dgrid-selector");
+
+			//[GTI][MR]: add special class (dgrid-cell-selector) for easy styling.
+			put(parent && parent.contents ? parent : cell, ".dgrid-cell-selector.dgrid-selector");
 			
 			// [GTI][JU] Use wrapAsDijit to stlye
 			if (column.wrapAsDijit) {
@@ -194,14 +196,20 @@ function(kernel, arrayUtil, on, aspect, has, put){
 			return input;
 		};
 		
+		listeners.push(//[GTI]MR: push handler into listeners and destroy it properly
 		aspect.after(column, "init", function(){
 			grid = column.grid;
-		});
+		})//
+		);
 		
+		listeners.push(//[GTI]MR: push handler into listeners and destroy it properly
 		aspect.after(column, "destroy", function(){
-			arrayUtil.forEach(listeners, function(l){ l.remove(); });
+			arrayUtil.forEach(listeners, function(l){ 
+				l.remove(); 
+			});
 			grid._hasSelectorInputListener = false;
-		});
+		})//
+		);
 		
 		column.renderCell = function(object, value, cell, options, header){
 			var row = object && grid.row(object);
@@ -214,6 +222,14 @@ function(kernel, arrayUtil, on, aspect, has, put){
 			
 			if(type == "radio" || !grid.allowSelectAll){
 				th.appendChild(document.createTextNode(label));
+
+				//[GTI][MR]: add special class (dgrid-cell-selector) for easy styling.
+				//we can not use .dgrid-selector because it is used as click selector
+				//which might cause problem in single selection mode and clicking on header
+				if(!label){
+					put(th, ".dgrid-cell-selector");
+				}
+
 				if(!grid._hasSelectorInputListener){
 					setupSelectionEvents();
 				}
