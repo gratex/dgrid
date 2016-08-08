@@ -158,7 +158,7 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 				}else if(this === grid.paginationFirstNode){
 					grid.gotoPage(1);
 				}else if(this === grid.paginationLastNode){
-					grid.gotoPage(max);
+					grid.gotoPage(max || 1);
 				}else if(cls === "dgrid-page-link"){
 					grid.gotoPage(+this.innerHTML); // the innerHTML has the page number
 				}
