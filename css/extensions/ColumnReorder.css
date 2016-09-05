@@ -1,4 +1,4 @@
-.dgrid-header .dojoDndTarget .dgrid-cell {
+.dgrid-header .dgrid-cell.dojoDndItem {
 	display: table-cell; /* override any spurious dojoDndItem settings elsewhere */
 }
 
