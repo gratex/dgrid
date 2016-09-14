@@ -92,21 +92,6 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 		//		columns from each other. This mainly serves the purpose of allowing for
 		//		column locking.
 		
-		insertRow : function() {//[GTI] added whole method
-			var row = this.inherited(arguments);
-			adjustScrollLeft(this, row); // bugfix 1053
-			var rowId = row.id;
-			var rowListeners = this._rowsListeners[rowId];
-			if (!rowListeners) {
-				rowListeners = this._rowsListeners[rowId] = [];
-			}
-			//[GTI]AK,PK:when row in columnset is rerendered (e.g. editor is displayed)
-			//this rows get scrolled horizontaly, we need to hook to this scroll event and scroll whole columnset
-			query(".dgrid-column-set", row).forEach(function(element) {
-				rowListeners.push(listen(element, "scroll", lang.hitch(this, this._onColumnSetScroll)));
-			}, this);
-			return row;
-		},
 		postCreate: function(){
 			var self = this;
 			this.inherited(arguments);
@@ -149,6 +134,16 @@ function(kernel, declare, lang, Deferred, listen, aspect, query, has, miscUtil, 
 		insertRow: function(){
 			var row = this.inherited(arguments);
 			adjustScrollLeft(this, row);
+			var rowId = row.id;
+			var rowListeners = this._rowsListeners[rowId];
+			if (!rowListeners) {
+				rowListeners = this._rowsListeners[rowId] = [];
+			}
+			//[GTI]AK,PK:when row in columnset is rerendered (e.g. editor is displayed)
+			//this rows get scrolled horizontaly, we need to hook to this scroll event and scroll whole columnset
+			query(".dgrid-column-set", row).forEach(function(element) {
+				rowListeners.push(listen(element, "scroll", lang.hitch(this, this._onColumnSetScroll)));
+			}, this);
 			return row;
 		},
 		
