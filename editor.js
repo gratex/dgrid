@@ -296,6 +296,13 @@ function createSharedEditor(column, originalRenderCell){
 				grid._activeOptions ? lang.delegate(options, grid._activeOptions) : options));
 		}
 		
+		// [GTI]JU: Reset editor value so it will not show in next cell (in case that next cell's value is 'undefined')
+		if (cmp.reset) {
+			var _hasBeenBlurred = cmp._hasBeenBlurred; // preserve original _hasBeenBlurred
+			cmp.reset();
+			cmp._hasBeenBlurred = _hasBeenBlurred;			
+		}
+		
 		// Reset state now that editor is deactivated;
 		// reset focusedCell as well since some browsers will not trigger the
 		// focusout event handler in this case
