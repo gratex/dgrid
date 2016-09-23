@@ -462,7 +462,7 @@ function edit(cell) {
 			value = (dirty && existsInNested(field, dirty)) ? lang.getObject(field, false, dirty) :				
 				column.get ? column.get(row.data) : lang.getObject(field, false, row.data);
 			// check to see if the cell can be edited
-			if(!column.canEdit || column.canEdit(cell.row.data, value)){
+			if(!column.canEdit || column.canEdit(lang.mixin({}, cell.row.data, dirty), value)){
 				dfd = new Deferred();
 				
 				// In some browsers, moving a DOM node causes a blur event to fire which is not
