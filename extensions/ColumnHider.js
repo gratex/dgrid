@@ -259,6 +259,25 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 			return !!this._columnHiderRules[id];
 		},
 		
+		resizeColumnHiderMenu : function() {
+			// summary:
+			//		Used to resize opened column hider menu after possible change of grid height caused by hiding columns
+			//		Hiding/showing columns may change grid height when:
+			//		 - horizontal scrollbar appears/disappears
+			//		 - header height changes because of presence/absence of mutliline texts
+			//		by [GTI]
+			var hiderMenuNode = this.hiderMenuNode,
+				domNode = this.domNode,
+				scrollTop = hiderMenuNode.scrollTop;
+			
+			hiderMenuNode.style.height = ""; // reset height			
+			if (this._hiderMenuOpened && hiderMenuNode.offsetHeight > this.domNode.offsetHeight - 12) {
+				// see _toggleColumnHiderMenu for explanation of 12
+				hiderMenuNode.style.height = (domNode.offsetHeight - 12) + "px";
+				hiderMenuNode.scrollTop = scrollTop; // restore scroll position after height reset
+			}
+		},
+		
 		_toggleColumnHiderMenu: function(){
 			var hidden = this._hiderMenuOpened, // reflects hidden state after toggle
 				hiderMenuNode = this.hiderMenuNode,
@@ -321,7 +340,16 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 				window.setTimeout(function(){
 					tableRule.remove();
 					grid.resize();
+					
+					window.setTimeout(function(){
+						grid.resizeColumnHiderMenu();				
+					}, 5);
 				}, 0);
+			} else {
+				// [GTI] JU: resize menu
+				window.setTimeout(function(){
+					grid.resizeColumnHiderMenu();				
+				}, 5);
 			}
 		},
 		
@@ -334,6 +362,11 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 				this._columnHiderRules[id].remove();
 				delete this._columnHiderRules[id];
 			}
+			var grid = this;
+			// [GTI] JU: resize menu
+			window.setTimeout(function(){
+				grid.resizeColumnHiderMenu();				
+			}, 5);
 		},
 		
 		_updateColumnHiddenState: function(id, hidden){
