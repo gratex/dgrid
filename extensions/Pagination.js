@@ -529,7 +529,11 @@ function(_StoreMixin, declare, arrayUtil, lang, Deferred, on, query, string, has
 					
 					dfd.resolve(results);
 				}, function(error){
-					cleanupLoading(grid);
+					// AR: do not cleanup loadong for cancel errors
+					// we assume that cancel error means that next request is going on, so do not wrongly remove loading
+					if(error.dojoType != "cancel"){
+						cleanupLoading(grid);
+					}
 					dfd.reject(error);
 				});
 				
