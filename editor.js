@@ -634,6 +634,9 @@ return function(column, editor, editOn){
 			});
 		}
 		
+		if(!column.canEdit || column.canEdit(object, value)){
+			put(cell, ".dgrid-cell-editon");
+		};
 		// initially render content in non-edit mode
 		return originalRenderCell.call(column, object, value, cell, options);
 		
