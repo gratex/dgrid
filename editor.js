@@ -498,9 +498,14 @@ function edit(cell) {
 
 // editor column plugin function
 
-return function(column, editor, editOn){
+return function editorFn(column, editor, editOn){
 	// summary:
 	//		Adds editing capability to a column's cells.
+	
+	var origColumn = lang.clone(column);
+	column.clone = function() {
+		return editorFn(lang.clone(origColumn), editor, editOn);
+	};
 	
 	var originalRenderCell = column.renderCell || Grid.defaultRenderCell,
 		listeners = [],
