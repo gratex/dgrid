@@ -1,6 +1,7 @@
 define([
 	"dojo/_base/declare",
 	"dojo/_base/array",
+	"dojo/_base/lang",
 	"dojo/_base/Deferred",
 	"dojo/query",
 	"dojo/on",
@@ -9,7 +10,7 @@ define([
 	"./Grid",
 	"dojo/has!touch?./util/touch",
 	"put-selector/put"
-], function(declare, arrayUtil, Deferred, querySelector, on, aspect, has, Grid, touchUtil, put){
+], function(declare, arrayUtil, lang, Deferred, querySelector, on, aspect, has, Grid, touchUtil, put){
 
 function defaultRenderExpando(level, hasChildren, expanded, object){
 	// summary:
@@ -57,6 +58,11 @@ function tree(column){
 	//		Adds tree navigation capability to a column.
 	
 	var originalRenderCell = column.renderCell || Grid.defaultRenderCell;
+	
+	var origColumn = lang.clone(column);
+	column.clone = function() {
+		return tree(lang.clone(origColumn));
+	};
 	
 	var currentLevel, // tracks last rendered item level (for aspected insertRow)
 		clicked; // tracks row that was clicked (for expand dblclick event handling)
