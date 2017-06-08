@@ -91,6 +91,15 @@ html.has-quirks .dgrid-header-hidden .dgrid-cell {
 	height: 99%;
 }
 
+html.has-ie.dj_ie9 .dgrid-scroller {
+	/* 
+		growing div when autoHeight is set to true and horizontal scroll is present
+		https://stackoverflow.com/questions/16217455/ie9-bug-mysteriously-growing-div 
+		https://stackoverflow.com/questions/13353256/internet-explorer-9s-magically-expanding-div
+	*/
+	display: inline-block;
+}
+
 .dgrid-scroller {
 	overflow-x: auto;
 	overflow-y: scroll;
