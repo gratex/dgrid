@@ -502,9 +502,9 @@ return function editorFn(column, editor, editOn){
 	// summary:
 	//		Adds editing capability to a column's cells.
 	
-	var origColumn = lang.clone(column);
+	var origColumn = lang.mixin({}, column); //use shalow clone, not to clone e.g. stores in editor args
 	column.clone = function() {
-		return editorFn(lang.clone(origColumn), editor, editOn);
+		return editorFn(lang.mixin({}, origColumn), editor, editOn);
 	};
 	
 	var originalRenderCell = column.renderCell || Grid.defaultRenderCell,
