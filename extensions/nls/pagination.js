@@ -10,6 +10,7 @@ define({
 		rowsPerPage: "Number of rows per page"
 	},
 	ar: true,
+	cs: true,
 	de: true,
 	es: true,
 	fr: true,
