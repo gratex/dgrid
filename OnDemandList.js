@@ -535,7 +535,7 @@ return declare([List, _StoreMixin], {
 				}
 				
 				// Avoid spurious queries (ideally this should be unnecessary...)
-				if(!("queryLevel" in options) && (options.start > grid._total || options.count < 0)){
+				if(!("queryLevel" in options) && (options.start >= grid._total || options.count < 0)){
 					continue;
 				}
 				
