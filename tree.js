@@ -87,11 +87,12 @@ function tree(column){
 		// Turn off automatic cleanup of empty observers, to prevent confusion
 		// due to observers operating at multiple hierarchy levels.
 		grid.cleanEmptyObservers = false;
-		
-		if(!grid.store){
-			throw new Error("dgrid tree column plugin requires a store to operate.");
-		}
-		
+
+		// MB: store can be created and set later (ex. together with query)
+		//if(!grid.store){
+		//	throw new Error("dgrid tree column plugin requires a store to operate.");
+		//}
+
 		if (!column.renderExpando){
 			column.renderExpando = defaultRenderExpando;
 		}
