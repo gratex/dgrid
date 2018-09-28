@@ -400,6 +400,10 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			return row;
 		},
 		removeRow: function(rowElement, justCleanup){
+			if (this.noDataNode) { // AR: noData node is used also as error node, clear it after (remove) action
+				put(this.noDataNode, "!");
+				delete this.noDataNode;
+			}
 			var row = {element: rowElement};
 			// Check to see if we are now empty...
 			if(!justCleanup && this.noDataMessage &&
