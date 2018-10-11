@@ -11,8 +11,9 @@ define([
 	"./Grid",
 	"put-selector/put",
 	"dijit/form/CheckBox",
+	"dijit/form/_TextBoxMixin",
 	"dojo/_base/sniff"
-], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, query, when, Grid, put, CheckBox){
+], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, query, when, Grid, put, CheckBox, _TextBoxMixin){
 
 function updateInputValue(input, value){
 	// common code for updating value of a standard input
@@ -488,7 +489,12 @@ function edit(cell) {
 		cmp = cellElement.widget || cellElement.input;
 		if(cmp){
 			dfd = new Deferred();
-			if(cmp.focus){ cmp.focus(); }
+			if(cmp.focus){
+				cmp.focus();
+				cmp.isInstanceOf(_TextBoxMixin) && setTimeout(function(){
+					_TextBoxMixin.selectInputText(cmp.textbox);
+				}, 0);
+			}
 			dfd.resolve(cmp);
 			return dfd.promise;
 		}
