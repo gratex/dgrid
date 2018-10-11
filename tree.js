@@ -131,12 +131,12 @@ function tree(column){
 		}
 		
 		// Set up hash to store IDs of expanded rows
-		if(!grid._expanded){ grid._expanded = {}; }
+		if(!grid._expanded){ grid._expanded = {}; grid._expandedAndCollapsed = {}; }
 		
 		listeners.push(aspect.after(grid, "insertRow", function(rowElement){
 			// Auto-expand (shouldExpand) considerations
 			var row = this.row(rowElement),
-				expanded = column.shouldExpand(row, currentLevel, this._expanded[row.id]);
+				expanded = column.shouldExpand(row, currentLevel, this._expanded[row.id], this._expandedAndCollapsed[row.id]);
 			
 			if(expanded){ this.expand(rowElement, true, true); }
 			return rowElement; // pass return value through
@@ -161,6 +161,7 @@ function tree(column){
 			// (which generally coincides with refreshes, as well as destroy).
 			listeners.push(aspect.after(grid, "cleanup", function(){
 				this._expanded = {};
+				this._expandedAndCollapsed = {};
 			}));
 		}
 		
@@ -196,9 +197,10 @@ function tree(column){
 			//AR: Only update _expanded map, not rendered yet
 			if(!row.element){
 				if(expanded){
-					this._expanded[row.id] = true;
+					this._expanded[row.id] = this._expandedAndCollapsed[row.id] = true;
 				}else{
 					delete this._expanded[row.id];
+					this._expandedAndCollapsed[row.id] = false;
 				}
 				return;
 			}
@@ -299,9 +301,10 @@ function tree(column){
 				
 				// Update _expanded map.
 				if(expanded){
-					this._expanded[row.id] = true;
+					this._expanded[row.id] = this._expandedAndCollapsed[row.id] = true;
 				}else{
 					delete this._expanded[row.id];
+					this._expandedAndCollapsed[row.id] = false;
 				}
 			}
 			return promise;
