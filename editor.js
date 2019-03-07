@@ -439,7 +439,10 @@ function edit(cell) {
 		// to play nice with Keyboard's dgrid-cellfocusin as an editOn event
 		column._editTimer = setTimeout(function(){
 			// focus the newly-placed control (supported by form widgets and HTML inputs)
-			if(cmp.focus){ cmp.focus(); }
+			if(cmp.focus){ 
+				cmp.focus(); 
+				cmp.isInstanceOf(_TextBoxMixin) && _TextBoxMixin.selectInputText(cmp.textbox);
+			}
 			// resume blur handler once editor is focused
 			if(column._editorBlurHandle){ column._editorBlurHandle.resume(); }
 			column._editTimer = null;
