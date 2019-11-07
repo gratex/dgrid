@@ -369,10 +369,13 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 			}, 5);
 		},
 		
-		_updateColumnHiddenState: function(id, hidden){
+		_updateColumnHiddenState: function(id, hidden, noResize){
 			// summary:
 			//		Performs internal work for toggleColumnHiddenState; see the public
 			//		method for more information.
+			
+			// AR: added no resize, to prevent multiple resize when multiple columns are going to be changed
+			// resize should be then handled manualy if needed
 			
 			this[hidden ? '_hideColumn' : '_showColumn'](id);
 			
@@ -389,10 +392,10 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 			});
 
 			// Adjust the size of the header.
-			this.resize();
+			!noResize && this.resize();
 		},
 		
-		toggleColumnHiddenState: function(id, hidden){
+		toggleColumnHiddenState: function(id, hidden, noResize){
 			// summary:
 			//		Shows or hides the column with the given id.
 			// id: String
@@ -401,8 +404,11 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 			//		If specified, explicitly sets the hidden state of the specified
 			//		column.  If unspecified, toggles the column from the current state.
 			
+			// AR: added no resize, to prevent multiple resize when multiple columns are going to be changed
+			// resize should be then handled manualy if needed
+			
 			if(typeof hidden === "undefined"){ hidden = !this._columnHiderRules[id]; }
-			this._updateColumnHiddenState(id, hidden);
+			this._updateColumnHiddenState(id, hidden, noResize);
 			
 			// Since this can be called directly, re-sync the appropriate checkbox.
 			this._columnHiderCheckboxes[id].checked = !hidden;
