@@ -119,7 +119,7 @@ function(declare, has, listen, miscUtil, put, i18n, domAttr){
 			
 			label = put(div, "label.dgrid-hider-menu-label.hider-menu-label-" + replacedId +
 				"[" + forAttr + "=" + checkId + "]",
-				col.label || col.field || "");
+				col.columnHiderLabel || col.label || col.field || "");
 			
 			put(this.hiderMenuNode, div);
 			
