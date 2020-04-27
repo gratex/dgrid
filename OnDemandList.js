@@ -675,6 +675,16 @@ return declare([List, _StoreMixin], {
 		}
 		// Finish the row removal.
 		this.inherited(arguments);
+	},
+	
+	insertRow: function(){
+		// AR: we track error only around store.query
+		// but if it fails then while rendering error is lost
+		// this is safe place to track error, not to duplicate errors if it fails in store.query
+		var args = arguments;
+		return this._trackError(function() {
+			return this.inherited("insertRow", args);
+		});
 	}
 });
 
