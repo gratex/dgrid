@@ -43,7 +43,8 @@
 }
 .dgrid-hider-menu-label {
 	display: block;
-	padding-left: 20px;
+	/*padding-left: 20px;*/
+	margin-left: 20px !important; /* AR: this will fix CHB to work in computers with touch monitor (but only CHB clikc, not label click TSK-23-005721) */
 }
 
 html.has-quirks .dgrid-hider-menu-check,
