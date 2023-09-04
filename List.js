@@ -778,7 +778,7 @@ function(kernel, declare, dom, listen, has, miscUtil, TouchScroll, hasClass, put
 				(this.addUiClasses ? " ui-state-default" : "");
 			// get the row id for easy retrieval
 			this._rowIdToObject[row.id = id] = object;
-			parent.insertBefore(row, beforeNode || null);
+			parent.insertBefore(row, beforeNode && parent.contains(beforeNode) ? beforeNode : null);
 			if(previousRow){
 				// in this case, we are pulling the row from another location in the grid, and we need to readjust the rowIndices from the point it was removed
 				this.adjustRowIndices(previousRow);
