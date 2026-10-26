@@ -495,7 +495,8 @@ function edit(cell) {
 			if(cmp.focus){
 				cmp.focus();
 				cmp.isInstanceOf(_TextBoxMixin) && setTimeout(function(){
-					_TextBoxMixin.selectInputText(cmp.textbox);
+					// FIX: the widget textbox can be rerendered at this time with autoSave:true grid option
+					cmp.textbox && _TextBoxMixin.selectInputText(cmp.textbox);
 				}, 0);
 			}
 			dfd.resolve(cmp);
